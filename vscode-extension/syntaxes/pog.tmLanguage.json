@@ -1,0 +1,194 @@
+{
+	"scopeName": "source.pog",
+	"patterns": [
+		{ "include": "#file" }
+	],
+	"repository": {
+	  "file": {
+		"patterns": [
+			{ "include": "#pragma" },
+			{ "include": "#protos"}
+		]
+	  },
+	  "pragma": {
+		"name": "pog.pragma",
+		"begin": "#<",
+		"end": ">",
+		"beginCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"endCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"patterns": [
+			{ "include": "#protos" }
+		]
+	  },
+	  "protoMeta": {
+		"begin": "<",
+		"end": ">",
+		"beginCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"endCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"patterns": [
+			{ "include": "#protos"}
+		]
+	  },
+	  "protoData": {
+		"name": "pog.proto.data",
+		"begin": "{",
+		"end": "}",
+		"beginCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"endCaptures": {
+			"0": { "name": "keyword.control" }
+		},
+		"patterns": [
+			{ "include": "#protos"}
+		]
+	  },
+	  "protos": {
+		"name": "pog.protos.",
+		"patterns": [
+			{ "include": "#proto" },
+			{ "match": ",", "name": "constant.character"}
+		]
+	  },
+	  "protoUnion": {
+		"name": "pog.proto.union",
+		"patterns": [
+			{ "match": "\\|",
+				"name": "pog.proto.operator.union",
+				"captures": {
+					"0": { "name": "keyword.control" }
+				}
+			},
+			{ "include": "#protoSimple" }
+		]
+	  },
+	  "protoIntersection" :{
+		"name": "pog.proto.intersection",
+		"patterns": [
+			{ "match": "&",
+				"name": "pog.proto.operator.intersection",
+				"captures": {
+					"0": { "name": "keyword.control" }
+				}
+			},
+			{ "include": "#protoUnion" }
+		]
+	  },
+	  "proto": {
+		"name": "pog.proto.container",
+		"patterns": [
+			{ "include": "#leadingDoc" },
+			{ "include": "#protoIntersection"},
+			{ "include": "#trailingDoc"}
+		]
+	  },
+	  "markerName": {
+		"match": "[a-z][a-zA-Z0-9_]*",
+		"name": "pog.name.marker",
+		"captures": {
+			"0": {"name": "entity.name.tag"}
+		}
+	  },
+	  "name": {
+		"match": "(([a-zA-Z][a-zA-Z0-9_]*)\\s*(:))|([a-zA-Z][a-zA-Z0-9_]*(?<!:))",
+		"name": "pog.name",
+		"captures": {
+			"2": {"name": "entity.name.tag"},
+			"3": {"name": "keyword.operator"},
+			"4": {"name": "entity.name.type"}
+		}
+	  },
+	  "qname": {
+		"match": "([a-zA-Z][a-zA-Z0-9_]*)(\\.[a-zA-Z][a-zA-Z0-9_]*)+",
+		"name": "pog.qname",
+		"captures": {
+			"0": {"name": "entity.name.type"}
+		}
+	  },
+	  "protoSimple": {
+		"name": "pog.proto.simple",
+		"patterns": [
+			{ "include": "#protoUnnamed" },
+			{ "include": "#protoOptional" },
+			{ "include": "#protoMarker" },
+			{ "include": "#protoNamed" }
+		]
+	  },
+	  "protoMarker": {
+		"name": "pog.proto.marker",
+		"patterns": [
+			{ "include": "#markerName" }
+		]
+	  },
+	  "protoVal": {
+		"name": "pog.proto.val",
+		"patterns": [
+			{ 
+				"match": "\"[^\"]*\"", 
+				"name": "string.quoted.double"
+			},
+			{
+				"begin": "\"",
+				"end": "",
+				"name": "string.quoted.double"
+			}
+		]
+	  },
+	  "protoType": {
+		"name": "pog.proto.type",
+		"patterns": [
+			{ "include": "#qname" }
+		]
+	  },
+	  "lineComment": {
+		"match": "\\s*//.*$",
+		"name": "comment.line.double-slash"
+	  },
+	  "trailingDoc": {
+		"patterns": [
+			{ "include": "#lineComment" }
+		]
+	  },
+	  "leadingDoc": {
+		"patterns": [
+			{ "include": "#lineComment" }
+		]
+	  },
+	  "protoUnnamed": {
+		"name": "pog.proto.unnamed",
+		"patterns": [
+			{ "include": "#protoMeta"},
+			{ "include": "#protoData"},
+			{ "include": "#protoType"},
+			{ "include": "#protoVal"}
+		]
+	  },
+	  "optionalOperator": {
+		"match": "\\?:",
+		"name": "keyword.operator"
+	  },
+	  "protoOptional": {
+		"name": "pog.proto.optional",
+		"patterns": [
+			{ "include": "#qname"},
+			{ "include": "#optionalOperator"},
+			{ "include": "#protoUnnamed"}
+		]
+	  },
+	  "protoNamed": {
+		"name": "pog.proto.named",
+		"patterns": [
+			{ "include": "#name" },
+			{ "include": "#protoUnnamed"}
+		]
+	  }
+	}
+  }

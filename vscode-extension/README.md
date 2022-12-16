@@ -1,0 +1,1 @@
+# LanguageServer for POG files
