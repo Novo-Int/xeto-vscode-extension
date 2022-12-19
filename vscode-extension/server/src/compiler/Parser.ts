@@ -99,57 +99,6 @@ export class Parser {
   }
 
   private parseProto(parent: CProto, isMeta: boolean): CProto | null {
-    let p = this.parseUnion(parent, isMeta);
-    if (p === null || this.cur !== Token.AMP) return p;
-
-    const intersection = this.hoistCompound(p, "sys.Intersection");
-    const of = intersection.getOwn("_of");
-
-    if (!of) {
-      throw this.err(`Expecting to have _of in ${intersection.name}`);
-    }
-
-    while (this.cur === Token.AMP) {
-      const ampLoc = this.curToLoc();
-      this.consume(Token.AMP);
-      this.skipNewlines();
-      p = this.parseSimple(of, false);
-      if (p === null)
-        this.err(
-          `Expecting proto after & in intersection type, not ${this.curToStr()} at ${ampLoc}`
-        );
-      if (p !== null) this.addProto(of, p);
-    }
-
-    return intersection;
-  }
-
-  private parseUnion(parent: CProto, isMeta: boolean): CProto | null {
-    let p = this.parseSimple(parent, isMeta);
-    if (p === null || this.cur !== Token.PIPE) return p;
-
-    const union = this.hoistCompound(p, "sys.Union");
-    const of = union.getOwn("_of");
-
-    if (!of) {
-      throw this.err(`Expecting to have _of in ${union.name}`);
-    }
-
-    while (this.cur === Token.PIPE) {
-      const pipeLoc = this.curToLoc();
-      this.consume(Token.PIPE);
-      this.skipNewlines();
-      p = this.parseSimple(of, false);
-      if (p === null)
-        this.err(
-          `Expecting proto after | in union type, not ${this.curToStr()}`
-        );
-      if (p !== null) this.addProto(of, p);
-    }
-    return union;
-  }
-
-  private parseSimple(parent: CProto, isMeta: boolean): CProto | null {
     // leading comment
     const doc = this.parseLeadingDoc();
 
@@ -164,12 +113,11 @@ export class Parser {
     // parse name+type productions as one of three cases:
     //  1) <name> ":" for named child
     //  2) <name> "." for qnamed child
-    //  3) <name> "? :" for optional named child
-    //  4) <name> only as shortcut for name:Marker (if lowercase name only)
-    //  5) unnamed child, auto assign name using "_digits"
+    //  3) <name> only as shortcut for name:Marker (if lowercase name only)
+    //  4) unnamed child, auto assign name using "_digits"
     let name = "";
     let type: CType | undefined;
-    let optional = false;
+    const optional = false;
 
     if (this.cur === Token.ID && this.peek === Token.COLON) {
       // 1) <name> ":" for named child
@@ -195,22 +143,10 @@ export class Parser {
         type = new CType(loc, name);
         name = parent.assignName;
       }
-    } else if (this.cur === Token.ID && this.peek === Token.QUESTION) {
-      // 3) <name> "? :" for optional named child
+    } else if (this.cur === Token.ID && this.peek !== Token.COLON && isLower(this.curVal.toString())) {
+      // 3) <name> only as shortcut for name:Marker (if lowercase name only)
       name = this.parseProtoName(isMeta);
-      optional = true;
-      this.consume(Token.QUESTION);
-      this.consume(Token.COLON);
-      this.skipNewlines();
-      type = this.parseProtoType();
-    } else if (
-      this.cur === Token.ID &&
-      this.peek !== Token.COLON &&
-      isLower(this.curVal.toString())
-    ) {
-      // 4) <name> only as shortcut for name:Marker (if lowercase name only)
-      name = this.parseProtoName(isMeta);
-      type = new CType(loc, "sys.Marker");
+      type = new CType(loc, "sys.Marker");      
     } else {
       // 5) unnamed child, auto assign name using "_digits"
       name = parent.assignName;
@@ -243,7 +179,97 @@ export class Parser {
     return name;
   }
 
+  /*
+  <protoType>        :=  <protoTypeOr> | <protoTypeAnd> | <protoTypeMaybe> | <protoTypeSimple>
+  <protoTypeOr>      :=  <protoTypeOrPart> ("|" <protoTypeOrPart>)*
+  <protoTypeOrPart>  :=  [<protoTypeSimple>] [<protoVal>]  // must have at least one of these productions
+  <protoTypeAnd>     :=  <protoTypeSimple> ("&" <protoTypeSimple>)*
+  <protoMaybe>       :=  <protoTypeSimple> "?"
+  <protoTypeSimple>  :=  <qname>
+  */
   private parseProtoType(): CType | undefined {
+    // special case for "foo" | "bar"
+    if (this.cur === Token.STR && this.peek === Token.PIPE) {
+      return this.parseProtoTypeOr(this.parseProtoTypeOrPart());
+    }
+
+    // consume simple qname
+    const simple = this.parseProtoTypeSimple();
+    if (simple === undefined ) return simple;
+
+    // now check for and/or/maybe
+    if (this.cur === Token.QUESTION) {
+      this.consume();
+      return CType.makeMaybe(simple);
+    }
+
+    if (this.cur === Token.AMP) {
+      return this.parseProtoTypeAnd(simple);
+    }
+    if (this.cur === Token.PIPE) {
+      return this.parseProtoTypeOr(simple);
+    }
+    if (this.cur === Token.STR && this.peek === Token.PIPE) {
+      return this.parseProtoTypeOr(simple);
+    }
+
+    return simple;
+  }
+
+  private parseProtoTypeOr(first: CType): CType
+  {
+    // if first item is Str "val"
+    if (this.cur === Token.STR) {
+      this.consume();
+      first = new CType(first.loc, first.name, this.curVal);
+    }
+
+    const of = [first];
+
+    while (this.cur === Token.PIPE) {
+      this.consume();
+      this.skipNewlines();
+      of.push(this.parseProtoTypeOrPart());
+    }
+    return CType.makeOr(of);
+  }
+
+  private parseProtoTypeOrPart(): CType {
+    const loc = this.curToLoc();
+
+    const name = this.parseProtoTypeSimple()?.name;
+    let val = undefined;
+
+    if (this.cur === Token.STR) {
+      val = this.curVal;
+      this.consume();
+    }
+
+    if (name === undefined && (val === null || val === undefined)) {
+      this.err("Expecting name or value for or-part", loc);
+    }
+
+    return new CType(loc, name ?? "sys.Str", val);
+  }
+
+  private parseProtoTypeAnd(first: CType): CType | undefined {
+    const of = [first];
+
+    while (this.cur === Token.AMP) {
+      this.consume();
+      this.skipNewlines();
+      const part = this.parseProtoTypeSimple();
+
+      if (!part) {
+        throw new Error("Expecting name for and-part");
+      }
+
+      of.push(part);
+    }
+    return CType.makeAnd(of);
+  }
+
+  private parseProtoTypeSimple(): CType | undefined {
     if (this.cur !== Token.ID) return undefined;
     const loc = this.curToLoc();
     let name = this.consumeName();
@@ -310,31 +336,6 @@ export class Parser {
 
   private addProto(parent: CProto, child: CProto) {
     this.step.addSlot(parent, child);
-  }
-
-  private hoistCompound(p: CProto, type: string): CProto {
-    // this method hoists P to Union <of:List { _0: P }>
-
-    // allocate new sys.Union/Intersection object to replace proto we just parsed
-    const loc = p.loc;
-    const compound = this.makeProto(loc, p.name, p.doc, new CType(loc, type));
-
-    // allocate <of> object
-    const of = this.makeProto(
-      loc,
-      "_of",
-      undefined,
-      new CType(loc, "sys.List")
-    );
-    this.addProto(compound, of);
-
-    // now re-create the proto we just parsed as _0 as first item of <of>
-    const first = this.makeProto(loc, of.assignName, undefined, p.type);
-    first.children = p.children;
-    first.val = p.val;
-    this.addProto(of, first);
-
-    return compound;
   }
 
   //////////////////////////////////////////////////////////////////////////

@@ -1,5 +1,6 @@
 import { Path } from "./Path";
 import { FileLoc } from "./FileLoc";
+import { UnknownProtoError } from './Errors';
 
 export class CLib {
   readonly path: Path; // library dotted name
@@ -56,11 +57,27 @@ export class CProto {
     this.children = {};
   }
 
+  public get(name: string, checked = true): CProto | undefined {
+    const kid = this.children[name];
+    if (kid) {
+      return kid;
+    }
+
+    const typeKid = this.type?.get(name);
+    if (typeKid) {
+      return kid;
+    }
+
+    if (checked) throw new UnknownProtoError(`${this.qname}${name}`);
+
+    return undefined;
+  }
+
   public getOwn(name: string, checked = true): CProto | null {
     const kid = this.children[name];
 
     if (kid) return kid;
-    if (checked) throw new Error(`${this.qname}.${name}`);
+    if (checked) throw new UnknownProtoError(`${this.qname}.${name}`);
 
     return null;
   }
@@ -77,9 +94,21 @@ export class CProto {
     return this.isRoot ? Path.root : this.parent!.path.add(this.name);
   }
 
+  public isMeta(): boolean { return this.name[0] === '_'; }
+
   public isObj(): boolean {
     return this.qname === "sys.Obj";
   }
+
+  public isEnum() { return this.qname === "sys.Enum"; }
+
+  public isMarker() { return this.qname === "sys.Marker"; }
+
+  public isMaybe() { return this.qname === "sys.Maybe"; }
+
+  public isAnd() { return this.qname === "sys.And"; }
+
+  public isOr() { return this.qname === "sys.Or"; }
 
   public toString(): string {
     return this.isRoot ? "_root_" : this.path.toString();
@@ -104,10 +133,33 @@ export class CType {
   public readonly loc: FileLoc;
   public readonly name: string; // simple or dotted name
 
+  private of?: CType[];
+
   constructor(loc: FileLoc, name: string, resolved: CProto | null = null) {
     this.loc = loc;
     this.name = name;
     this.resolved = resolved;
+  }
+
+  public static makeMaybe(of: CType) {
+    const ret = new CType(of.loc, "sys.Maybe");
+    ret.of = [of];
+
+    return ret;
+  }
+
+  public static makeOr(of: CType[]) {
+    const ret = new CType(of[0].loc, "sys.Or");
+    ret.of = of;
+
+    return ret;
+  }
+
+  public static makeAnd(of: CType[]) {
+    const ret = new CType(of[0].loc, "sys.And");
+    ret.of = of;
+
+    return ret;
   }
 
   public static makeUnresolved(loc: FileLoc, name: string): CType {
@@ -128,6 +180,20 @@ export class CType {
     }
 
     throw new Error(`Not resolved yet: ${this.name}`);
+  }
+
+  public get(name: string): CProto | undefined {
+    if (this.of === undefined) {
+      return this.deref().get(name, false);
+    }
+
+    for( let i = 0; i < this.of.length; i++) {
+      const found = this.of[i].get(name);
+
+      if (found) {
+        return found;
+      }
+    }
   }
 
   public toString(): string {

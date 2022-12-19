@@ -24,3 +24,9 @@ export class CompilerError extends Error {
 		}
 	}
 }
+
+export class UnknownProtoError extends Error {
+	public constructor(message: string) {
+		super(message);
+	}
+}
