@@ -9,20 +9,22 @@
 		"multi-root ready"
 	],
 	"engines": {
-		"vscode": "^1.63.0"
+		"vscode": "^1.73.0"
 	},
 	"activationEvents": [
 		"onLanguage:plaintext"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
-		"languages": [{
-			"id": "pog",
-			"extensions": [
-				".pog"
-			],
-			"configuration": "./language-configuration.json"
-		}],
+		"languages": [
+			{
+				"id": "pog",
+				"extensions": [
+					".pog"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
 		"grammars": [
 			{
 				"language": "pog",
