@@ -29,6 +29,7 @@ import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
 import { CLib, CProto } from './compiler/CTypes';
 import { Dirent } from 'fs';
+import { Uri } from 'vscode';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -40,6 +41,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
+let rootFolders: string[] = [];
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
 
@@ -73,14 +75,28 @@ const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
 	return storage;
 };
 
-connection.onInitialize((params: InitializeParams) => {
-	const rootFolderUris = getRootFolderFromParams(params);
-
-	rootFolderUris.forEach(async folderPath => {
+const parseAllRootFolders = () => {
+	rootFolders.forEach(async folderPath => {
 		const files = await addWorkspaceRootToWatch(folderPath);
 
 		const pogFiles = files.filter(path => path.endsWith('.pog'));
+
+		pogFiles
+			.filter(file => !docsToCompilerResults[`file://${file}`])
+			.forEach(async file => {
+				const textDocument = TextDocument.create(`file://${file}`, 'pog', 1, await (await fs.readFile(file)).toString());
+
+				parseDocument(textDocument);
+
+				console.log(documents);
+			});
 	});
+};
+
+connection.onInitialize((params: InitializeParams) => {
+	rootFolders = getRootFolderFromParams(params);
+
+	parseAllRootFolders();
 
 	const capabilities = params.capabilities;
 
@@ -189,6 +205,8 @@ documents.onDidClose(e => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
+	parseAllRootFolders();
+
 	parseDocument(change.document);
 });
 
