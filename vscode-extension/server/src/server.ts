@@ -22,10 +22,13 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
+import fs from 'fs/promises';
+
 import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
 import { CLib, CProto } from './compiler/CTypes';
+import { Dirent } from 'fs';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -40,7 +43,45 @@ let hasDiagnosticRelatedInformationCapability = false;
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
 
+const getRootFolderFromParams = (params:InitializeParams): string[] => {
+	let ret = '';
+
+	if (params.workspaceFolders) {
+		ret = params.workspaceFolders[0].uri;
+	} else {
+		ret = params.rootUri || '';
+	}
+
+	ret = ret.replace('file://', '');
+
+	return [ret];
+};
+
+const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
+	const files = await fs.readdir(uri, {
+		withFileTypes: true,
+	});
+
+	await Promise.all(files.map((dirEntry: Dirent) => {
+		if (dirEntry.isDirectory()) {
+			return addWorkspaceRootToWatch(`${uri}/${dirEntry.name}`, storage);
+		} else {
+			storage.push(`${uri}/${dirEntry.name}`);
+		}
+	}));
+
+	return storage;
+};
+
 connection.onInitialize((params: InitializeParams) => {
+	const rootFolderUris = getRootFolderFromParams(params);
+
+	rootFolderUris.forEach(async folderPath => {
+		const files = await addWorkspaceRootToWatch(folderPath);
+
+		const pogFiles = files.filter(path => path.endsWith('.pog'));
+	});
+
 	const capabilities = params.capabilities;
 
 	// Does the client support the `workspace/configuration` request?
