@@ -72,6 +72,7 @@
 		"@types/node": "^16.18.3",
 		"@typescript-eslint/eslint-plugin": "^5.42.0",
 		"@typescript-eslint/parser": "^5.42.0",
+		"@vscode/vsce": "^2.16.0",
 		"eslint": "^8.26.0",
 		"mocha": "^9.2.1",
 		"typescript": "^4.8.4"
