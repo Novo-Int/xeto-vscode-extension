@@ -8,6 +8,9 @@
 	"keywords": [
 		"multi-root ready"
 	],
+	"repository": {
+		"url": "https://github.com/Novo-Int/pog-vscode-extension"
+	},
 	"engines": {
 		"vscode": "^1.73.0"
 	},
