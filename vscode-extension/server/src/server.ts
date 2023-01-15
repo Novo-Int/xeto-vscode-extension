@@ -14,7 +14,9 @@ import {
 	TextDocumentSyncKind,
 	InitializeResult,
 	CompletionParams,
-	DidChangeWatchedFilesNotification
+	DidChangeWatchedFilesNotification,
+	HoverParams,
+	Hover
 } from 'vscode-languageserver/node';
 
 import {
@@ -117,6 +119,7 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
+			hoverProvider: true,
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
@@ -279,6 +282,9 @@ connection.onDidChangeWatchedFiles(_change => {
 	connection.console.log('We received an file change event');
 });
 
+const identifierCharRegexp = /[a-zA-Z0-9_. \n\t]/;
+const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
+
 function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
 	let position = doc.offsetAt(pos);
 	const text = doc.getText();
@@ -286,7 +292,7 @@ function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
 	// this is naive, but we go backwards until we reach a :
 	let identifier = "";
 
-	while (position >= -1 && text.charAt(position).match(/[a-zA-Z0-9_. \n\t]/)) {
+	while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
 		identifier = text.charAt(position) + identifier;
 		position --;
 	}
@@ -298,6 +304,31 @@ function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
 	identifier = identifier.trim().replace(/[\n\t]/g, '');
 
 	return identifier;
+}
+
+function getLargestIdentifierForPosition(doc: TextDocument, pos: Position): string[] {
+	let position = doc.offsetAt(pos);
+	const text = doc.getText();
+
+	// this is naive, but we go backwards until we reach a :
+	let identifier = "";
+
+	while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
+		identifier = text.charAt(position) + identifier;
+		position --;
+	}
+
+	identifier = identifier.trim().replace(/[\n\t]/g, '');
+
+	position = doc.offsetAt(pos) + 1;
+	while(position < text.length && text.charAt(position).match(identifierSegmentCharRegexp)) {
+		identifier += text.charAt(position);
+		position ++;
+	}
+
+	identifier = identifier.trim().replace(/[\n\t]/g, '');
+
+	return identifier.split('.');
 }
 
 function findExternalPogsOnLibName(libName: string): CProto[] {
@@ -370,6 +401,28 @@ connection.onCompletionResolve(
 		return item;
 	}
 );
+
+function handleHover(params: HoverParams): Hover | null {
+	// let try to find the identifier for this position
+	const compiledDocument = docsToCompilerResults[params.textDocument.uri];
+	const doc = documents.get(params.textDocument.uri);
+
+	if (!compiledDocument || !doc) {
+		return null;
+	}
+
+	const partialIdentifier = getLargestIdentifierForPosition(doc, params.position);
+
+	if (!partialIdentifier) {
+		return null;
+	}
+
+	console.log(partialIdentifier);
+
+	return null;
+}
+
+connection.onHover(handleHover);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
