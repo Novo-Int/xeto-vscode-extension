@@ -89,8 +89,6 @@ const parseAllRootFolders = () => {
 				const textDocument = TextDocument.create(`file://${file}`, 'pog', 1, await (await fs.readFile(file)).toString());
 
 				parseDocument(textDocument);
-
-				console.log(documents);
 			});
 	});
 };
