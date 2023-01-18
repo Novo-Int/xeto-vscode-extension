@@ -409,13 +409,53 @@ function handleHover(params: HoverParams): Hover | null {
 		return null;
 	}
 
-	const partialIdentifier = getLargestIdentifierForPosition(doc, params.position);
+	const identifier = getLargestIdentifierForPosition(doc, params.position);
 
-	if (!partialIdentifier) {
+	if (!identifier) {
 		return null;
 	}
 
-	console.log(partialIdentifier);
+	const proto = compiledDocument.findProtoByQname(identifier.join('.'));
+
+	if (proto) {
+		if (proto.doc) {
+			return {
+				contents: proto.doc
+			};
+		}
+	} else {
+		const lib = identifier[0];
+		const libs = findExternalPogsOnLibName(lib);
+		
+		if (libs.length === 0) {
+			return null;
+		}
+
+		//	get compilers for files that have this lib
+		const compilerKeys = Object.keys(docsToCompilerResults).filter(file => {
+			const split = file.split('/');
+			return split[split.length-2] === libs[0].children["lib"].val;
+		});
+
+		const identifierWithoutLib = identifier.slice(1).join('.');
+
+		const options = compilerKeys
+			.map(key => docsToCompilerResults[key].findProtoByQname(identifierWithoutLib))
+			.reduce((acc, current) => {
+
+				if (current) {
+					return [...acc, current];
+				}
+
+				return acc;
+			}, [] as CProto[]);
+		
+		if (options[0].doc) {
+			return {
+				contents: options[0].doc
+			};
+		}
+	}
 
 	return null;
 }
