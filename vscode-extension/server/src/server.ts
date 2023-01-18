@@ -400,16 +400,16 @@ connection.onCompletionResolve(
 	}
 );
 
-function handleHover(params: HoverParams): Hover | null {
+function getProtoFromFileLoc(uri: string, pos: Position): CProto | null {
 	// let try to find the identifier for this position
-	const compiledDocument = docsToCompilerResults[params.textDocument.uri];
-	const doc = documents.get(params.textDocument.uri);
+	const compiledDocument = docsToCompilerResults[uri];
+	const doc = documents.get(uri);
 
 	if (!compiledDocument || !doc) {
 		return null;
 	}
 
-	const identifier = getLargestIdentifierForPosition(doc, params.position);
+	const identifier = getLargestIdentifierForPosition(doc, pos);
 
 	if (!identifier) {
 		return null;
@@ -418,11 +418,7 @@ function handleHover(params: HoverParams): Hover | null {
 	const proto = compiledDocument.findProtoByQname(identifier.join('.'));
 
 	if (proto) {
-		if (proto.doc) {
-			return {
-				contents: proto.doc
-			};
-		}
+		return proto;
 	} else {
 		const lib = identifier[0];
 		const libs = findExternalPogsOnLibName(lib);
@@ -451,13 +447,23 @@ function handleHover(params: HoverParams): Hover | null {
 			}, [] as CProto[]);
 		
 		if (options[0].doc) {
-			return {
-				contents: options[0].doc
-			};
+			return options[0];
 		}
 	}
 
 	return null;
+}
+
+function handleHover(params: HoverParams): Hover | null {
+	const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
+
+	if (!proto) {
+		return null;
+	}
+
+	return {
+		contents: proto.doc || ''
+	};
 }
 
 connection.onHover(handleHover);
