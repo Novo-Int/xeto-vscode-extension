@@ -28,6 +28,7 @@ jobs:
       if: runner.os == 'Linux'
     - run: npm test
       if: runner.os != 'Linux'
+    - run: npm install -g vsce
     - name: Build vsix
       if: success()
       run: vsce package -o ./pog-extension.vsix 
