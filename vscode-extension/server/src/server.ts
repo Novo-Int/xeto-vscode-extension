@@ -78,7 +78,7 @@ const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
 };
 
 const parseAllRootFolders = () => {
-	rootFolders.forEach(async folderPath => {
+	rootFolders.filter(folder => Boolean(folder)).forEach(async folderPath => {
 		const files = await addWorkspaceRootToWatch(folderPath);
 
 		const pogFiles = files.filter(path => path.endsWith('.pog'));
