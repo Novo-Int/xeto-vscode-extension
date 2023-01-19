@@ -29,25 +29,19 @@ jobs:
     - run: npm test
       if: runner.os != 'Linux'
     - run: npm install -g vsce
-    - name: Build vsix
-      if: success()
-      run: vsce package -o ./pog-extension.vsix 
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./vscode-extension
-    if: success() && startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./pog-extension.vsix
-          asset_name: extension.vsix
-          tag: ${{ github.ref }}
-          overwrite: true
+      if: runner.os == 'Linux'
+    - name: Upload binaries to release
+      if: success() && runner.os == 'Linux'
+      run: vsce package -o ./pog-extension.vsix
+    - name: Push extension to release
+      if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ./pog-extension.vsix
+        asset_name: extension.vsix
+        tag: ${{ github.ref }}
+        overwrite: true
 
  
 
