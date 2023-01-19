@@ -23,10 +23,10 @@ export class Parser {
   private peekLine = 0; // next token line number
   private peekCol = 0; // next token col number
 
-  public constructor(input: string, step: IStep) {
+  public constructor(input: string, step: IStep, loc = "input") {
     this.step = step;
 
-    this.fileLoc = new FileLoc("input");
+    this.fileLoc = new FileLoc(loc);
 
     this.tokenizer = new Tokenizer(input);
 

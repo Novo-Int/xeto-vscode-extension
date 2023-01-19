@@ -52,7 +52,7 @@ export class Parse extends Step
 
       this.compiler.libs = [lib];
 
-      const parser = new Parser(source, this);
+      const parser = new Parser(source, this, this.compiler?.sourceUri);
       parser.parse(lib, isLibMetaFile);
     } catch (e: unknown) {
       console.log(e);
