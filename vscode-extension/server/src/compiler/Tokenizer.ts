@@ -39,6 +39,7 @@ export class Tokenizer {
     this.currentError = undefined;
 
     // skip non-meaningful whitespace and comments
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       // treat space, tab, non-breaking space as whitespace
       if (
@@ -94,19 +95,8 @@ export class Tokenizer {
       return this.tok;
     }
 
-    let foundUnknown = false;
-
     // operator
-    do {
-      this.tok = this.operator();
-      if (this.tok === Token.UNKNOWN) {
-        foundUnknown = true;
-      }
-    } while (this.tok === Token.UNKNOWN);
-
-    if (foundUnknown === true) {
-      this.currentError = new CompilerError(`Unknown symbol`, ErrorTypes.UNKNOWN_SYMBOL, new FileLoc('', this.line, this.col), new FileLoc('', this.curLine, this.curCol));
-    }
+    this.tok = this.operator();
 
     return this.tok;
   }
@@ -142,6 +132,7 @@ export class Tokenizer {
 
     let s = "";
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const ch = this.cur;
       if (ch === '"') {
@@ -252,8 +243,6 @@ export class Tokenizer {
         return Token.COMMA;
       case ":":
         return Token.COLON;
-      case ";":
-        return Token.SEMICOLON;
       case "[":
         return Token.LBRACKET;
       case "]":
@@ -278,24 +267,21 @@ export class Tokenizer {
         return Token.AMP;
       case "|":
         return Token.PIPE;
-      case "#":
-        if (this.cur === "<") {
-          this.consume();
-          return Token.LIB_META;
-        }
-        if (this.cur === "{") {
-          this.consume();
-          return Token.PRAGMA;
-        }
-        return Token.POUND;
       case "\0":
         return Token.EOF;
     }
 
     if (c === "\0") return Token.EOF;
 
-    throw new Error(`Unexpected symbol: ${toCode(c, "'")} (0x${toHex(c)})`);
-    return Token.UNKNOWN;
+    if (c === '') {
+      return Token.UNKNOWN;
+    }
+
+    throw new CompilerError(`Unexpected symbol: ${toCode(c, "'")} (0x${toHex(c)})`,
+      ErrorTypes.UNCLOSED_STRING,
+      new FileLoc("", this.line, this.col, this.charIndex),
+      new FileLoc("", this.curLine, this.curCol)
+    );
   }
 
   // Comments
@@ -306,6 +292,7 @@ export class Tokenizer {
     this.consume(); // next slash
     if (this.cur === " ") this.consume(); // first space
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this.cur === "\n" || this.cur === "\0") break;
       comment += this.cur;
@@ -322,6 +309,7 @@ export class Tokenizer {
     this.consume(); // first slash
     this.consume(); // next slash
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this.cur === "\n" || this.cur == "\0") break;
       this.consume();
@@ -333,6 +321,7 @@ export class Tokenizer {
     this.consume(); // next slash
     let depth = 1;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (this.cur === "*" && this.peek === "/") {
         this.consume();
