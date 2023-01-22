@@ -5,6 +5,7 @@ export class FileLoc {
     public readonly charIndex: number;
 
     public static synthetic = new FileLoc('synthetic');
+    public static unknown = new FileLoc('unknown');
     
     public constructor(file: string, line = 0, col = 0, charIndex = 0) {
         this.file = file;

@@ -11,36 +11,23 @@ export class Parse extends Step
 {
   public source = "";
 
-  public run(isLibMetaFile = false): void {
-    this.parseString(this.source, isLibMetaFile);
+  public run(): void {
+    this.parseString(this.source);
   }
 
-  private parseLib(lib: CLib) {
-    // lib.src.each |file| { parseFile(lib, file, lib.isLibMetaFile(file)) }
-  }
-
-  private parseString(toParse: string = this.source, isLibMetaFile = false) {
+  private parseString(toParse: string = this.source) {
     try {
-      const pound = toParse.indexOf("#<");
       const loc = new FileLoc("memory");
       let path: Path;
       let source = '';
 
-      if (pound !== -1) {        
-        const name = toParse.substring(0, pound).trim();
-        source = toParse.substring(pound).trim();
+      source = toParse;
+      path = new Path('unnamed');
 
-        path = new Path(name);
-        isLibMetaFile = true;
-      } else {
-        source = toParse;
-        path = new Path('unnamed');
-
-        //  check if this is part of a library
-        if (fs.existsSync(osPath.join(this.compiler?.sourceUri.replace('file:/', ''), '..', 'lib.pog'))) {
-          const split = this.compiler?.sourceUri.split('/');
-          path = new Path(`${split[split.length-2]}.${split[split.length-1]}`);
-        }
+      //  check if this is part of a library
+      if (fs.existsSync(osPath.join(this.compiler?.sourceUri.replace('file:/', ''), '..', 'lib.pog'))) {
+        const split = this.compiler?.sourceUri.split('/');
+        path = new Path(`${split[split.length-2]}.${split[split.length-1]}`);
       }
 
       if (this.compiler?.sourceUri.endsWith('lib.pog')) {
@@ -53,7 +40,7 @@ export class Parse extends Step
       this.compiler.libs = [lib];
 
       const parser = new Parser(source, this);
-      parser.parse(lib, isLibMetaFile);
+      parser.parse(this.compiler.ast);
     } catch (e: unknown) {
       console.log(e);
       throw e;

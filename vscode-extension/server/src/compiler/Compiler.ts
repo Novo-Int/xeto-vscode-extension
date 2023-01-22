@@ -1,53 +1,17 @@
 import { CLib, CProto } from "./CTypes";
 import { CompilerError, ErrorTypes } from './Errors';
 import { FileLoc } from "./FileLoc";
-import { IStep, Parse, ResolveAlias } from "./steps";
+import { Parse, ResolveAlias } from "./steps";
 
 export class ProtoCompiler {
-  public errs: CompilerError[] = [];              // err
-  //internal Duration? duration            // run
-  public libs: CLib[] = [];                  // InitLibs
-  public root: CProto =  new CProto(FileLoc.synthetic, "");          // Parse
-  //internal CSys? sys                     // ResolveSys
-  //internal MProtoSpace? ps               // Assemble
+  public errs: CompilerError[] = [];
+  public libs: CLib[] = [];
+  public root: CProto =  new CProto(FileLoc.synthetic, "");
+  public ast: Record<string, unknown> = {};
   public readonly sourceUri: string;
 
   public constructor(sourceUri: string) {
     this.sourceUri = sourceUri;
-  }
-
-  /*
-  ProtoSpace compileSpace() {
-    run(frontend).ps
-  }
-
-  ProtoSpace compileMain(Str[] outputs)
-  {
-    steps := frontend.dup
-    outputs.each |o|
-    {
-      switch (o)
-      {
-        case "json": steps.add(GenJson())
-        default: throw err("Unknown output format: $o", FileLoc.inputs)
-      }
-    }
-    return run(steps).ps
-  }*/
-
-  private frontend(): IStep[]
-  {
-    return [
-      //InitLibs(),
-      //new Parse(),
-      //ResolveSys(),
-      //ResolveDepends(),
-      //ExpandNested(),
-      //ResolveNames(),
-      //AddMeta(),
-      //Inherit(),
-      //Assemble(),
-    ];
   }
 
   private isCompilerError(err: any): err is CompilerError {

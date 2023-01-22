@@ -42,5 +42,5 @@ export function toCode(source: string, quote = '"'): string {
 export function trimToNull(str: string) {
     const ret = str.trim();
 
-    return ret === "" ? undefined : ret;
+    return ret === "" ? null : ret;
 }

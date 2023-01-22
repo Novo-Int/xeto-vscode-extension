@@ -1,17 +1,28 @@
 import { Token } from "./Token";
 import { Tokenizer } from "./Tokenizer";
 import { FileLoc } from "./FileLoc";
-import { toCode, isLower, trimToNull } from "./StringUtils";
+import { isLower, trimToNull } from "./StringUtils";
 
-import { CPragma, CType, CLib, CProto } from "./CTypes";
 import { IStep } from "./steps/IStep";
-import { CompilerError, ErrorTypes } from './Errors';
+import { ErrorTypes } from './Errors';
+
+class ParsedProto {
+  readonly loc: FileLoc;
+  public doc: string | null;
+  public name: string | null;
+  public traits: Record<string, unknown> = {};
+ 
+  constructor (loc: FileLoc) {
+    this.loc = loc;
+    this.doc = null;
+    this.name = null;
+  }
+}
 
 export class Parser {
   private step: IStep;
   private fileLoc: FileLoc;
   private tokenizer: Tokenizer;
-  private pragma?: CPragma;
 
   private cur: Token; // current token
   private curVal: any; // current token value
@@ -35,42 +46,29 @@ export class Parser {
     this.consume();
   }
 
-  public parse(lib: CLib, isLibMetaFile: boolean) {
+  public parse(root: Record<string, unknown>) {
     try {
-      this.parsePragma(lib, isLibMetaFile);
-      this.parseProtos(lib.proto!, false);
+      const rootProto = new ParsedProto(this.curToLoc());
+      rootProto.traits = root;
+
+      this.parseProtos(rootProto, false);
       this.verify(Token.EOF);
+
+      return root;
     } catch (e: any) {
       this.err(e.message);
     }
   }
-  private parsePragma(lib: CLib, isLibMetaFile: boolean) {
-    this.pragma = new CPragma(this.fileLoc, lib);
-
-    if (isLibMetaFile) {
-      this.parseLibMeta(lib);
-      lib.proto!.pragma = new CPragma(this.fileLoc, lib);
-    }
-  }
-
-  private parseLibMeta(lib: CLib) {
-    const doc = this.parseLeadingDoc();
-
-    if (this.cur !== Token.LIB_META) {
-      this.err(`Expecting #<> lib meta, not ${this.curToStr()}`);
-    }
-
-    this.parseProtoChildren(lib.proto!, Token.LIB_META, Token.GT, true);
-  }
 
   //Protos
 
-  private parseProtos(parent: CProto, isMeta: boolean) {
+  private parseProtos(parent: ParsedProto, isMeta: boolean) {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
-      const proto = this.parseProto(parent, isMeta);
-      if (proto === null) break;
-      this.addProto(parent, proto);
+      const child = this.parseProto();
+      if (child === null) break;
       this.parseEndOfProto();
+      this.addToParent(parent, child, isMeta);
     }
   }
 
@@ -98,7 +96,7 @@ export class Parser {
     this.consume();
   }
 
-  private parseProto(parent: CProto, isMeta: boolean): CProto | null {
+  private parseProto(): ParsedProto | null {
     // leading comment
     const doc = this.parseLeadingDoc();
 
@@ -108,249 +106,241 @@ export class Parser {
     if (this.cur === Token.GT) return null;
 
     // this token is start of our proto production
-    const loc = this.curToLoc();
+    const proto = new ParsedProto(this.curToLoc());
+    proto.doc = doc;
 
-    // parse name+type productions as one of three cases:
-    //  1) <name> ":" for named child
-    //  2) <name> "." for qnamed child
-    //  3) <name> only as shortcut for name:Marker (if lowercase name only)
-    //  4) unnamed child, auto assign name using "_digits"
-    let name = "";
-    let type: CType | undefined;
-    const optional = false;
-
+    // <markerOnly> | <named> | <unnamed>
     if (this.cur === Token.ID && this.peek === Token.COLON) {
-      // 1) <name> ":" for named child
-      name = this.parseProtoName(isMeta);
+      proto.name = this.consumeName();
       this.consume(Token.COLON);
-      this.skipNewlines();
-      type = this.parseProtoType();
-    } else if (this.cur === Token.ID && this.peek === Token.DOT) {
-      // 2) <name> "." for qnamed child
-      name = this.parseProtoName(isMeta);
-      while (this.cur === Token.DOT) {
-        this.consume();
-        name = `${name}.${this.consumeName()}`;
-      }
-
-      if (this.cur === Token.COLON) {
-        // name: ....
-        this.consume(Token.COLON);
-        this.skipNewlines();
-        type = this.parseProtoType();
-      } else {
-        // no colon is unnamed, and name is the qualified type
-        type = new CType(loc, name);
-        name = parent.assignName;
-      }
-    } else if (this.cur === Token.ID && this.peek !== Token.COLON && isLower(this.curVal.toString())) {
-      // 3) <name> only as shortcut for name:Marker (if lowercase name only)
-      name = this.parseProtoName(isMeta);
-      type = new CType(loc, "sys.Marker");      
+      this.parseBody(proto);
+    }
+    else if (this.cur === Token.ID && isLower(this.curVal.toString()) && this.peek !== Token.DOT) {
+      proto.name = this.consumeName();
+      proto.traits = {
+        "_is": "sys.Marker"
+      };
     } else {
-      // 5) unnamed child, auto assign name using "_digits"
-      name = parent.assignName;
-      type = this.parseProtoType();
+      this.parseBody(proto);
     }
-
-    // create the proto
-    const proto = this.makeProto(loc, name, doc, type);
-    if (optional) this.addMarker(proto, "_optional");
-
-    // proto body <meta> {data} "val"
-    const hasType = proto.type !== undefined;
-    const hasMeta = this.parseProtoMeta(proto);
-    const hasData = this.parseProtoData(proto);
-    const hasVal = this.parseProtoVal(proto);
-    this.parseTrailingDoc(parent);
-
-    // verify we had one production: type |meta | data | val
-    if (!(hasType || hasMeta || hasData || hasVal)) {
-      //throw new Error(`Expecting proto body: ${loc}`);
-      this.err(`Expecting proto body: ${loc}`);
-    }
+    
+    this.parseTrailingDoc(proto);
 
     return proto;
   }
 
-  private parseProtoName(isMeta: boolean): string {
-    let name = this.consumeName();
-    if (isMeta) name = "_" + name;
-    return name;
+  private parseBody(proto: ParsedProto) {
+    const a = this.parseIs(proto);
+    const meta = this.parseMeta(proto);
+    const childrenOrVal = this.parseChildrenOrVal(proto);
+
+    if (!a && !meta && !childrenOrVal) {
+      this.err(`Expecting proto body:`, this.curToLoc());
+    }
   }
 
-  /*
-  <protoType>        :=  <protoTypeOr> | <protoTypeAnd> | <protoTypeMaybe> | <protoTypeSimple>
-  <protoTypeOr>      :=  <protoTypeOrPart> ("|" <protoTypeOrPart>)*
-  <protoTypeOrPart>  :=  [<protoTypeSimple>] [<protoVal>]  // must have at least one of these productions
-  <protoTypeAnd>     :=  <protoTypeSimple> ("&" <protoTypeSimple>)*
-  <protoMaybe>       :=  <protoTypeSimple> "?"
-  <protoTypeSimple>  :=  <qname>
-  */
-  private parseProtoType(): CType | undefined {
-    // special case for "foo" | "bar"
+  private parseMeta(proto: ParsedProto): boolean {
+    if (this.cur !== Token.LT) {
+      return false;
+    }
+
+    this.parseProtoChildren(proto, Token.LT, Token.GT, true);
+
+    return true;
+  }
+
+  private parseChildrenOrVal(proto: ParsedProto): boolean {
+    if (this.cur === Token.LBRACE) {
+      return this.parseProtoChildren(proto, Token.LBRACE, Token.RBRACE, false);
+    }
+
+    if (this.cur.isVal) {
+      return this.parseVal(proto);
+    }
+
+    return false;
+  }
+
+  private parseVal(proto: ParsedProto): boolean {
+    proto.traits["_val"] = this.curVal;
+    this.consume();
+    return true;
+  }
+
+  private parseIs(p: ParsedProto): boolean {
     if (this.cur === Token.STR && this.peek === Token.PIPE) {
-      return this.parseProtoTypeOr(this.parseProtoTypeOrPart());
+      return this.parseIsOr(p, undefined, this.consumeVal());
     }
 
-    // consume simple qname
-    const simple = this.parseProtoTypeSimple();
-    if (simple === undefined ) return simple;
+    if (this.cur !== Token.ID) return false;
 
-    // now check for and/or/maybe
-    if (this.cur === Token.QUESTION) {
-      this.consume();
-      return CType.makeMaybe(simple);
-    }
+    const qname = this.consumeQName();
 
-    if (this.cur === Token.AMP) {
-      return this.parseProtoTypeAnd(simple);
-    }
-    if (this.cur === Token.PIPE) {
-      return this.parseProtoTypeOr(simple);
-    }
-    if (this.cur === Token.STR && this.peek === Token.PIPE) {
-      return this.parseProtoTypeOr(simple);
-    }
+    if (this.cur === Token.AMP)      return this.parseIsAnd(p, qname);
+    if (this.cur === Token.PIPE)     return this.parseIsOr(p, qname);
+    if (this.cur === Token.QUESTION) return this.parseIsMaybe(p, qname);
 
-    return simple;
+    p.traits["_is"] = qname;
+
+    return true;
   }
 
-  private parseProtoTypeOr(first: CType): CType
-  {
-    // if first item is Str "val"
-    if (this.cur === Token.STR) {
-      this.consume();
-      first = new CType(first.loc, first.name, this.curVal);
-    }
-
-    const of = [first];
-
-    while (this.cur === Token.PIPE) {
-      this.consume();
-      this.skipNewlines();
-      of.push(this.parseProtoTypeOrPart());
-    }
-    return CType.makeOr(of);
-  }
-
-  private parseProtoTypeOrPart(): CType {
-    const loc = this.curToLoc();
-
-    const name = this.parseProtoTypeSimple()?.name;
-    let val = undefined;
-
-    if (this.cur === Token.STR) {
-      val = this.curVal;
-      this.consume();
-    }
-
-    if (name === undefined && (val === null || val === undefined)) {
-      this.err("Expecting name or value for or-part", loc);
-    }
-
-    return new CType(loc, name ?? "sys.Str", val);
-  }
-
-  private parseProtoTypeAnd(first: CType): CType | undefined {
-    const of = [first];
+  private parseIsAnd(p: ParsedProto, qname: string): boolean{
+    const of = {};
+    this.addToOf(of, qname, undefined);
 
     while (this.cur === Token.AMP) {
       this.consume();
       this.skipNewlines();
-      const part = this.parseProtoTypeSimple();
-
-      if (!part) {
-        throw new Error("Expecting name for and-part");
-      }
-
-      of.push(part);
+      this.addToOf(of, this.parseIsSimple("Expecting next proto name after '&' and symbol"));
     }
-    return CType.makeAnd(of);
+
+    p.traits["_is"] = "sys.And";
+    p.traits["_of"] = of;
+
+    return true;
   }
 
-  private parseProtoTypeSimple(): CType | undefined {
-    if (this.cur !== Token.ID) return undefined;
-    const loc = this.curToLoc();
-    let name = this.consumeName();
+  private parseIsOr(p: ParsedProto, qname: string | undefined = undefined, val: string | undefined = undefined): boolean {
+    const of = {};
 
-    while (this.cur === Token.DOT) {
+    this.addToOf(of, qname, val);
+
+    while (this.cur === Token.PIPE) {
       this.consume();
-      name += "." + this.consumeName();
+      this.skipNewlines();
+
+      if (this.cur.isVal) {
+        this.addToOf(of, undefined, this.consumeVal());
+      } else {
+        this.addToOf(of, this.parseIsSimple("Expecting next proto name after '|' or symbol"));
+      }
     }
-    return new CType(loc, name);
+
+    p.traits["_is"] = "sys.Or";
+    p.traits["_of"] = of;
+
+    return true;
   }
 
-  private parseProtoMeta(parent: CProto): boolean {
-    return this.parseProtoChildren(parent, Token.LT, Token.GT, true);
+  private parseIsMaybe(p: ParsedProto, qname: string): boolean {
+    this.consume(Token.QUESTION);
+    p.traits["_is"] = "sys.Maybe";
+    p.traits["_of"] = {"_is": qname};
+    return true;
   }
 
-  private parseProtoData(parent: CProto): boolean {
-    return this.parseProtoChildren(parent, Token.LBRACE, Token.RBRACE, false);
+  private parseIsSimple(errMsg: string): string {
+    if (this.cur !== Token.ID) {
+      this.err(errMsg, this.curToLoc());
+    }
+
+    return this.consumeQName();
+  }
+
+  private addToOf(of: Record<string, unknown>, qname: string | undefined = undefined, val: string | undefined = undefined) {
+    of["_" + Object.keys(of).length] = {};
+
+    if (qname) {
+      of["_is"] = qname;
+    }
+
+    if (val) {
+      of["_val"] = val;
+    }
   }
 
   private parseProtoChildren(
-    parent: CProto,
+    proto: ParsedProto,
     open: Token,
     close: Token,
     isMeta: boolean
   ): boolean {
-    if (this.cur !== open) return false;
-    this.consume();
+    const loc = this.curToLoc();
+    this.consume(open);
     this.skipNewlines();
-    this.parseProtos(parent, isMeta);
-    //while (cur !== close) parseProto(parent, isMeta)
-    this.consume(close);
-    return true;
-  }
 
-  private parseProtoVal(proto: CProto): boolean {
-    if (!this.cur.isLiteral) return false;
-    proto.val = this.curVal;
-    this.consume();
+    this.parseProtos(proto, isMeta);
+    this.parseProtos(proto, isMeta);
+
+    if (this.cur !== close) {
+      this.err(`Unmatched closing ${close}`, loc);
+    }
+
+    this.consume(close);
+
     return true;
   }
 
   //////////////////////////////////////////////////////////////////////////
   // AST Manipulation
   //////////////////////////////////////////////////////////////////////////
+  private addToParent(parent: ParsedProto, child: ParsedProto, isMeta: boolean) {
+    this.addDoc(child);
+    this.addLoc(child);
 
-  private makeProto(
-    loc: FileLoc,
-    name: string,
-    doc?: string,
-    type?: CType
-  ): CProto {
-    const proto = new CProto(loc, name, doc, type);
-    proto.pragma = this.pragma;
-    return proto;
+    let name = child.name;
+
+    if (name === null) {
+      name = this.autoName(parent);
+    } else {
+      if (isMeta) {
+        if (name === "is") this.err("Proto name 'is' is reserved", child.loc);
+        if (name === "val") this.err("Proto name 'val' is reserved", child.loc);
+        name = "_" + name;
+      }
+      if (parent.traits[name]) {
+        this.err("Duplicate names '$name'", child.loc);
+      }
+    }
+
+    parent.traits[name] = child.traits;
   }
 
-  private addMarker(parent: CProto, name: string) {
-    const loc = parent.loc;
-    this.addProto(
-      parent,
-      this.makeProto(loc, name, undefined, new CType(loc, "sys.Marker"))
-    );
+  private addDoc(p: ParsedProto) {
+    if (p.doc == null) return;
+
+    p.traits["_doc"] = {
+      "_is": "sys.Str",
+      "_val": p.doc
+    };
   }
 
-  private addProto(parent: CProto, child: CProto) {
-    this.step.addSlot(parent, child);
+  private addLoc(p: ParsedProto) {
+    if (this.fileLoc === FileLoc.unknown) return;
+
+    p.traits["_loc"] = {
+      "_is": "sys.Str",
+      "_val": p.loc
+    };
+  }
+
+  private autoName(parent: ParsedProto): string {
+    for (let i = 0; i < 1_000_000; ++i) {
+      const name = `_${i}`;
+
+      if (parent.traits[name] == null) {
+        return name;
+      }
+    }
+
+    throw new Error("To many children");
   }
 
   //////////////////////////////////////////////////////////////////////////
   // Doc
   //////////////////////////////////////////////////////////////////////////
 
-  private parseLeadingDoc(): string | undefined {
-    let doc: string | undefined = undefined;
+  private parseLeadingDoc(): string | null {
+    let doc: string | null = null;
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       // skip leading blank lines
       this.skipNewlines();
 
       // if not a comment, then return null
-      if (this.cur !== Token.COMMENT) return undefined;
+      if (this.cur !== Token.COMMENT) return null;
 
       // parse one or more lines of comments
       doc = "";
@@ -371,7 +361,7 @@ export class Parser {
     return doc;
   }
 
-  private parseTrailingDoc(proto: CProto) {
+  private parseTrailingDoc(proto: ParsedProto) {
     if (this.cur === Token.COMMENT) {
       const doc = trimToNull(this.curVal.toString());
       if (doc != null && proto.doc == null) proto.doc = doc;
@@ -398,10 +388,15 @@ export class Parser {
     return new FileLoc(this.fileLoc.file, this.curLine, this.curCol, this.tokenizer.charIndex);
   }
 
-  private curToStr(): string {
-    return this.curVal !== null
-      ? `${this.cur} ${toCode(this.curVal.toString())}`
-      : this.cur.toString();
+  private consumeQName(): string {
+    let qname = this.consumeName();
+
+    while (this.cur === Token.DOT) {
+      this.consume();
+      qname += "." + this.consumeName();
+    }
+
+    return qname;
   }
 
   private consumeName(): string {
@@ -409,6 +404,14 @@ export class Parser {
     const name = this.curVal.toString();
     this.consume();
     return name;
+  }
+
+  private consumeVal(): string {
+    this.verify(Token.STR);
+    const val = this.curVal;
+    this.consume();
+
+    return val;
   }
 
   private consume(expected: Token | undefined = undefined) {
@@ -431,7 +434,7 @@ export class Parser {
     } catch (e: any) {
       // we have a CompilerError
       if (e.type) {
-        this.err(e);
+        this.err(e, e.loc);
       }
     }
   }
