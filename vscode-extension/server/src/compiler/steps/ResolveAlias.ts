@@ -1,9 +1,9 @@
-import { CLib, CProto, CType } from '../CTypes';
+import { CLib, CProto } from '../CTypes';
 import { Step } from './Step';
 
 export class ResolveAlias extends Step {
 	public run(): void {
-		this.compiler.libs.forEach(l => this.resolveAlias(l));
+		//
 	}
 
 	private resolveAlias(lib: CLib) {
@@ -21,7 +21,7 @@ export class ResolveAlias extends Step {
 			const ref = this.compiler.findProtoByQname(typeName);
 
 			if (ref && proto.type) {
-				proto.type = CType.makeResolved(proto.type.loc, ref);
+				// proto.type = CType.makeResolved(proto.type.loc, ref);
 			}
 		}
 

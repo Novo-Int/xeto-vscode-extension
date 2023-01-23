@@ -1,14 +1,15 @@
-import { CLib, CProto } from "./CTypes";
 import { CompilerError, ErrorTypes } from './Errors';
 import { FileLoc } from "./FileLoc";
-import { Parse, ResolveAlias } from "./steps";
+import { Parser } from './Parser';
+import { Proto } from './Proto';
 
 export class ProtoCompiler {
   public errs: CompilerError[] = [];
-  public libs: CLib[] = [];
-  public root: CProto =  new CProto(FileLoc.synthetic, "");
-  public ast: Record<string, unknown> = {};
+
+  public root?: Proto;
   public readonly sourceUri: string;
+
+  private ast: Record<string, unknown> = {};
 
   public constructor(sourceUri: string) {
     this.sourceUri = sourceUri;
@@ -37,13 +38,15 @@ export class ProtoCompiler {
 
     if (proto) {
       //  maybe this is an alias
-      const alias = proto.type?.resolved;
+      // const alias = proto.type?.resolved;
 
-      let toRet: string[] = [];
+      const toRet: string[] = [];
 
+      /*
       if (alias) {
         toRet = Object.keys(alias.children).filter(p => p.startsWith("_") === false);
       }
+      */
 
       return [...toRet, ...Object.keys(proto.children).filter(p => p.startsWith("_") === false)];
     }
@@ -51,50 +54,37 @@ export class ProtoCompiler {
     return [];
   }
 
-  public findProtoByQname(qname: string): CProto | undefined {
+  public findProtoByQname(qname: string): Proto | undefined {
+    if (!this.root) {
+      return undefined;
+    }
+
     const parts = qname === "" ? [] : qname.split(".");
 
-    let ret: CProto | undefined;
+    let ret: Proto | undefined;
+    let currentProto: Proto = this.root;
+    let currentPartIndex = 0;
 
-    this.libs.forEach(lib => {
-      if (!lib.proto) {
-        return;
-      }
+    while(currentProto && currentPartIndex < parts.length) {
+      const currentPart = parts[currentPartIndex++];
 
-      let currentProto: CProto | undefined = lib.proto;
-      let currentPartIndex = 0;
+      currentProto = currentProto.children[currentPart];
 
-      while(currentProto && currentPartIndex < parts.length) {
-        const currentPart = parts[currentPartIndex++];
-
-        // check for alias
-        let alias: CProto | undefined | null = currentProto.type?.resolved;
-
-        while (alias) {
-          currentProto = alias;
-          alias = alias.type?.resolved;
-        }
-
-        currentProto = currentProto.children[currentPart];
-      }
+      //  need to take into account aliases here
+      //  currentProto.type;
 
       if (currentProto && currentPartIndex === parts.length) {
         ret = currentProto;
       }
-    });
+    }
 
     return ret;
   }
 
   public run(input: string) {
-    const parseStep = new Parse();
-    parseStep.compiler = this;
-    parseStep.source = input;
+    const parseStep = new Parser(input, this.logErr.bind(this));
+    parseStep.parse(this.ast);
 
-    parseStep.run();
-
-    const aliasStep = new ResolveAlias();
-    aliasStep.compiler = this;
-    aliasStep.run();
+    this.root = Proto.fromAST(this.ast);
   }
 }

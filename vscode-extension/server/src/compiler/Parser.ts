@@ -3,8 +3,8 @@ import { Tokenizer } from "./Tokenizer";
 import { FileLoc } from "./FileLoc";
 import { isLower, trimToNull } from "./StringUtils";
 
-import { IStep } from "./steps/IStep";
-import { ErrorTypes } from './Errors';
+import { CompilerError, ErrorTypes } from './Errors';
+import { CompilerLogFunction } from './CompilerErrorType';
 
 class ParsedProto {
   readonly loc: FileLoc;
@@ -20,8 +20,8 @@ class ParsedProto {
 }
 
 export class Parser {
-  private step: IStep;
   private fileLoc: FileLoc;
+  private logErrCB: CompilerLogFunction;
   private tokenizer: Tokenizer;
 
   private cur: Token; // current token
@@ -34,10 +34,9 @@ export class Parser {
   private peekLine = 0; // next token line number
   private peekCol = 0; // next token col number
 
-  public constructor(input: string, step: IStep) {
-    this.step = step;
-
+  public constructor(input: string, logErrCB: CompilerLogFunction) {
     this.fileLoc = new FileLoc("input");
+    this.logErrCB = logErrCB;
 
     this.tokenizer = new Tokenizer(input);
 
@@ -290,11 +289,38 @@ export class Parser {
         name = "_" + name;
       }
       if (parent.traits[name]) {
-        this.err("Duplicate names '$name'", child.loc);
+        this.generateDuplicateDefErr(parent, child);
+        this.err(`Duplicate names '${name}'`, child.loc);
       }
     }
 
     parent.traits[name] = child.traits;
+  }
+
+  private generateDuplicateDefErr(parent: ParsedProto, child: ParsedProto): void {
+    if (!child.name) {
+      return;
+    }
+
+    const length = child.name.length;
+
+    const existingLoc = (parent.traits[child.name] as any)._loc._val as FileLoc;
+    const newLoc = child.loc;
+
+    const firstError = new CompilerError(`Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(newLoc, 1).toString()}`,
+      ErrorTypes.DUPLICATED_SYMBOL,
+      existingLoc,
+      {...existingLoc, col: existingLoc.col + length}
+    );
+
+    const secondError = new CompilerError(`Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(existingLoc, 1).toString()}`,
+      ErrorTypes.DUPLICATED_SYMBOL,
+      newLoc,
+      {...newLoc, col: newLoc.col + length}
+    );
+
+    this.logErrCB(firstError);
+    this.logErrCB(secondError);
   }
 
   private addDoc(p: ParsedProto) {
@@ -429,7 +455,7 @@ export class Parser {
       this.peekCol = this.tokenizer.col;
 
       if (this.tokenizer.currentError) {
-        this.step.compiler.logErr(this.tokenizer.currentError);
+        this.logErrCB(this.tokenizer.currentError);
       }
     } catch (e: any) {
       // we have a CompilerError
@@ -440,6 +466,6 @@ export class Parser {
   }
 
   private err(msg: string, loc: FileLoc = this.curToLoc()): void {
-    this.step.compiler.logErr(`${msg}`, ErrorTypes.MISSING_TOKEN, loc);
+    this.logErrCB(`${msg}`, ErrorTypes.MISSING_TOKEN, loc);
   }
 }
