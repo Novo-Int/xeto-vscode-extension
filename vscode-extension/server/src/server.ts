@@ -333,6 +333,9 @@ async function parseDocument(textDocument: TextDocument): Promise<void> {
 
 		// time to add it to the library manager
 		populateLibraryManager(compiler);
+
+		// resolve refs
+		compiler.root?.resolveRefTypes(compiler.root, libManager);
 	}
 	return;
 }
@@ -460,21 +463,10 @@ function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
 	if (proto) {
 		return proto;
 	} else {
-		const libName = identifier[0];
-		const lib = libManager.getLib(libName);
-		
-		if (!lib) {
-			return null;
-		}
-
-		const identifierWithoutLib = identifier.slice(1).join('.');
-
-		const proto = findProtoByQname(identifierWithoutLib, lib.rootProto) || null;
+		const proto = libManager.findProtoByQName(identifier.join('.'));
 		
 		return proto;
 	}
-
-	return null;
 }
 
 function handleHover(params: HoverParams): Hover | null {
