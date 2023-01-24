@@ -245,15 +245,17 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	}
 
 	let libName: string | undefined = undefined;
-	const libVersion = 'unknown';
+	let libVersion = 'unknown';
 
 	if (hasLib) {
 		libName = split[split.length - 2];
 	}
 
-	if (compiler.sourceUri.endsWith('lib.pog')) {
+	const isLibMeta = compiler.sourceUri.endsWith('lib.pog');
+
+	if (isLibMeta) {
 		libName = split[split.length - 2];
-		// libVersion = compiler.root?.children['pragma'];
+		libVersion = compiler.root?.children['pragma'].children._version.type;
 	}
 
 	if (!libName) {
@@ -270,9 +272,11 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 		return;
 	}
 
-	Object.entries(compiler.root.children).forEach(([name, proto]) => {
-		pogLib.addChild(name, proto);
-	});
+	if (!isLibMeta) {
+		Object.entries(compiler.root.children).forEach(([name, proto]) => {
+			pogLib.addChild(name, proto);
+		});
+	}
 }
 
 async function parseDocument(textDocument: TextDocument): Promise<void> {
