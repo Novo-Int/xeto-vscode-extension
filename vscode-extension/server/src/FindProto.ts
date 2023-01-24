@@ -26,7 +26,11 @@ export const findChildrenOf = (identifier: string, root: Proto): string[] => {
 };
 
 export const findProtoByQname = (qname: string, root: Proto): Proto | undefined => {
-    const parts = qname === "" ? [] : qname.split(".");
+	if (qname === "") {
+		return root;
+	}
+
+    const parts = qname.split(".");
 
     let ret: Proto | undefined;
     let currentProto: Proto = root;
