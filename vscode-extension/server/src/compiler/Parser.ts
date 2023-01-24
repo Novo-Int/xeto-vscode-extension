@@ -290,7 +290,6 @@ export class Parser {
       }
       if (parent.traits[name]) {
         this.generateDuplicateDefErr(parent, child);
-        this.err(`Duplicate names '${name}'`, child.loc);
       }
     }
 
