@@ -56,7 +56,7 @@ const getRootFolderFromParams = (params:InitializeParams): string[] => {
 	let ret = '';
 
 	if (params.workspaceFolders) {
-		ret = params.workspaceFolders[0].uri;
+		return params.workspaceFolders.map(folder => folder.uri.replace('file://', ''));
 	} else {
 		ret = params.rootUri || '';
 	}
@@ -256,8 +256,8 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
 	if (isLibMeta) {
 		libName = split[split.length - 2];
-		libVersion = compiler.root?.children['pragma'].children._version.type;
-		libDoc = compiler.root?.children['pragma'].doc || '';
+		libVersion = compiler.root?.children['pragma']?.children._version.type;
+		libDoc = compiler.root?.children['pragma']?.doc || '';
 	}
 
 	if (!libName) {
