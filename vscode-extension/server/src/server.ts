@@ -246,6 +246,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
 	let libName: string | undefined = undefined;
 	let libVersion = 'unknown';
+	let libDoc = '';
 
 	if (hasLib) {
 		libName = split[split.length - 2];
@@ -256,6 +257,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	if (isLibMeta) {
 		libName = split[split.length - 2];
 		libVersion = compiler.root?.children['pragma'].children._version.type;
+		libDoc = compiler.root?.children['pragma'].doc || '';
 	}
 
 	if (!libName) {
@@ -263,7 +265,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	}
 
 	if (!libManager.getLib(libName)) {
-		libManager.addLib(new PogLib(libName, libVersion));
+		libManager.addLib(new PogLib(libName, libVersion, libDoc));
 	}
 
 	const pogLib = libManager.getLib(libName);

@@ -6,10 +6,10 @@ export class PogLib {
 	readonly children: Record<string, Proto> = {};
 	readonly rootProto: Proto;
 
-	constructor(name: string, version: string) {
+	constructor(name: string, version: string, doc = "") {
 		this.name = name;
 		this.version = version;
-		this.rootProto = new Proto(name, 'sys.Root');
+		this.rootProto = new Proto(name, 'sys.Root', doc);
 	}
 
 	public addChild(name: string, proto: Proto): void {
