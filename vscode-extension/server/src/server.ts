@@ -30,11 +30,9 @@ import osPath = require('path');
 import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
-import { CProto } from './compiler/CTypes';
 import { Dirent } from 'fs';
 import { Proto } from './compiler/Proto';
 import { LibraryManager } from './libraries/LibManager';
-import path = require('path');
 import { PogLib } from './libraries/PogLib';
 import { findChildrenOf, findProtoByQname } from './FindProto';
 
