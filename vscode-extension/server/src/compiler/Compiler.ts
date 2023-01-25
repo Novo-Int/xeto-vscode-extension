@@ -29,58 +29,6 @@ export class ProtoCompiler {
     }
   }
 
-  public findChildrenOf(identifier: string): string[] {
-    if (identifier.endsWith('.')) {
-      identifier = identifier.slice(0, -1);
-    }
-
-    const proto = this.findProtoByQname(identifier);
-
-    if (proto) {
-      //  maybe this is an alias
-      // const alias = proto.type?.resolved;
-
-      const toRet: string[] = [];
-
-      /*
-      if (alias) {
-        toRet = Object.keys(alias.children).filter(p => p.startsWith("_") === false);
-      }
-      */
-
-      return [...toRet, ...Object.keys(proto.children).filter(p => p.startsWith("_") === false)];
-    }
-
-    return [];
-  }
-
-  public findProtoByQname(qname: string): Proto | undefined {
-    if (!this.root) {
-      return undefined;
-    }
-
-    const parts = qname === "" ? [] : qname.split(".");
-
-    let ret: Proto | undefined;
-    let currentProto: Proto = this.root;
-    let currentPartIndex = 0;
-
-    while(currentProto && currentPartIndex < parts.length) {
-      const currentPart = parts[currentPartIndex++];
-
-      currentProto = currentProto.children[currentPart];
-
-      //  need to take into account aliases here
-      //  currentProto.type;
-
-      if (currentProto && currentPartIndex === parts.length) {
-        ret = currentProto;
-      }
-    }
-
-    return ret;
-  }
-
   public run(input: string) {
     const parseStep = new Parser(input, this.logErr.bind(this), this.sourceUri);
     parseStep.parse(this.ast);
