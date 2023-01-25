@@ -47,7 +47,7 @@ jobs:
       - run: npm run compile
       - run: npm install -g vsce
       - name: Generate extension package
-        run: vsce package -o ./pog-extension.vsix
+        run: vsce package -o ../pog-extension.vsix
       - name: Push extension to release
         uses: svenstaro/upload-release-action@v2
         with:
