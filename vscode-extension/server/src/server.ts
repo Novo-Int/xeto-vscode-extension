@@ -413,7 +413,7 @@ function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
 		return [];
 	}
 
-	let options: string[] = compiledDocument.root && findChildrenOf(partialIdentifier, compiledDocument.root) || [];
+	let options = compiledDocument.root && findChildrenOf(partialIdentifier, compiledDocument.root) || [];
 
 	//	maybe the identifier is from a lib
 	if (options.length === 0) {
@@ -431,8 +431,10 @@ function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
 	}
 
 	return options.map(op => ({
-		label: op,
+		label: op.label,
 		kind: CompletionItemKind.Field,
+		detail: op.parent,
+		documentation: op.doc
 	}));
 }
 

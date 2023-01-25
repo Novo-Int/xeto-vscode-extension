@@ -1,6 +1,12 @@
 import { Proto } from './compiler/Proto';
 
-export const findChildrenOf = (identifier: string, root: Proto): string[] => {
+type ChildInfo = {
+	label: string
+	parent: string
+	doc?: string
+}
+
+export const findChildrenOf = (identifier: string, root: Proto): ChildInfo[] => {
 	if (identifier.endsWith('.')) {
 		identifier = identifier.slice(0, -1);
 	}
@@ -8,17 +14,25 @@ export const findChildrenOf = (identifier: string, root: Proto): string[] => {
 	const proto = findProtoByQname(identifier, root);
 
 	if (proto) {
-		const toRet: string[] = [];
+		const toRet: ChildInfo[] = [];
 
 		let refType = proto.refType;
 
 		while (refType) {
-			toRet.push(...Object.keys(refType.children).filter(p => p.startsWith("_") === false));
+			toRet.push(...Object.keys(refType.children).filter(p => p.startsWith("_") === false).map(label => ({
+				label,
+				parent: refType?.name || '',
+				doc: refType?.children[label].doc
+			})));
 
 			refType = refType.refType;
 		}
 
-		return [...toRet, ...Object.keys(proto.children).filter(p => p.startsWith("_") === false)];
+		return [...toRet, ...Object.keys(proto.children).filter(p => p.startsWith("_") === false).map(label => ({
+			label,
+			parent: proto.name,
+			doc: proto.children[label].doc
+		}))];
 	}
 
 	return [];
