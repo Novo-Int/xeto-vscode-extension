@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    if: startsWith(github.ref, 'refs/tags/') == false
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -30,18 +31,23 @@ jobs:
       if: runner.os != 'Linux'
     - run: npm install -g vsce
       if: runner.os == 'Linux'
-    - name: Upload binaries to release
+    - name: Generate extension package
       if: success() && runner.os == 'Linux'
       run: vsce package -o ../pog-extension.vsix
-    - name: Push extension to release
-      if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
-      uses: svenstaro/upload-release-action@v2
-      with:
-        repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: ./pog-extension.vsix
-        asset_name: extension.vsix
-        tag: ${{ github.ref }}
-        overwrite: true
+  deploy:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
+    steps:
+      - name: Push extension to release
+        if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./pog-extension.vsix
+          asset_name: extension.vsix
+          tag: ${{ github.ref }}
+          overwrite: true
+
 
  
 
