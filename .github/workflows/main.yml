@@ -39,7 +39,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: "extension.vsix"
-        path: pog-extension.vsix
+        path: vscode-extension/pog-extension.vsix
   deploy:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
