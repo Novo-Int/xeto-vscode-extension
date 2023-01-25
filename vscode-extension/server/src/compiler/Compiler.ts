@@ -82,7 +82,7 @@ export class ProtoCompiler {
   }
 
   public run(input: string) {
-    const parseStep = new Parser(input, this.logErr.bind(this));
+    const parseStep = new Parser(input, this.logErr.bind(this), this.sourceUri);
     parseStep.parse(this.ast);
 
     this.root = Proto.fromAST(this.ast);

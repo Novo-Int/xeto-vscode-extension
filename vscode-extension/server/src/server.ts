@@ -16,7 +16,9 @@ import {
 	CompletionParams,
 	DidChangeWatchedFilesNotification,
 	HoverParams,
-	Hover
+	Hover,
+	DefinitionParams,
+	Definition
 } from 'vscode-languageserver/node';
 
 import {
@@ -31,6 +33,7 @@ import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
 import { Dirent } from 'fs';
+import { Location } from 'vscode';
 import { Proto } from './compiler/Proto';
 import { LibraryManager } from './libraries/LibManager';
 import { PogLib } from './libraries/PogLib';
@@ -123,6 +126,7 @@ connection.onInitialize((params: InitializeParams) => {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			hoverProvider: true,
+			definitionProvider: true,
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
@@ -482,6 +486,30 @@ function handleHover(params: HoverParams): Hover | null {
 }
 
 connection.onHover(handleHover);
+
+function handleDefinition(params: DefinitionParams): Definition | null {
+	const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
+	
+	if (!proto) {
+		return null;
+	}
+
+	return {
+		uri: proto.loc.file,
+		range: {
+			start: {
+				line: proto.loc.line,
+				character: proto.loc.col,
+			},
+			end: {
+				line: proto.loc.line,
+				character: proto.loc.col + 1,
+			}
+		}
+	};
+}
+
+connection.onDefinition(handleDefinition);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

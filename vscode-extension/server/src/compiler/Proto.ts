@@ -1,5 +1,6 @@
 import { findProtoByQname } from '../FindProto';
 import { LibraryManager } from '../libraries/LibManager';
+import { FileLoc } from './FileLoc';
 
 const metaPropsNotToParse: Record<string, boolean> = { 
 	'_is': true,
@@ -14,6 +15,7 @@ export class Proto {
 	public readonly doc?: string;
 	public readonly name: string;
 	public readonly type: string;
+	public readonly loc: FileLoc;
 
 	//	alias link to another Proto
 	public get refType () {
@@ -26,10 +28,11 @@ export class Proto {
 
 	public children: Record<string, Proto> = {};
 
-	constructor (name: string, type: string, doc?: string) {
+	constructor (name: string, type: string, loc: FileLoc, doc?: string) {
 		this.name = name;
 		this.doc = doc;
 		this.type = type;
+		this.loc = loc;
 	}
 
 	public resolveRefTypes(root: Proto, libManager: LibraryManager) {
@@ -51,7 +54,7 @@ export class Proto {
 	}
 
 	private static fromPartialAST(name: string, ast: Record<string, any>): Proto {
-		const proto = new Proto(name, ast._is || ast._val, ast._doc?._val);
+		const proto = new Proto(name, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
 
 		Object.keys(ast)
 			.filter(key => !metaPropsNotToParse[key])
@@ -64,7 +67,7 @@ export class Proto {
 	}
 
 	static fromAST(ast: Record<string, any>): Proto {
-		const root = new Proto('root', 'sys.Root');
+		const root = new Proto('root', 'sys.Root', ast._loc);
 
 		Object.keys(ast)
 		.filter(key => !metaPropsNotToParse[key])

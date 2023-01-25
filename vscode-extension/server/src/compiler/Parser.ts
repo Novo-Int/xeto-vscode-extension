@@ -34,8 +34,8 @@ export class Parser {
   private peekLine = 0; // next token line number
   private peekCol = 0; // next token col number
 
-  public constructor(input: string, logErrCB: CompilerLogFunction) {
-    this.fileLoc = new FileLoc("input");
+  public constructor(input: string, logErrCB: CompilerLogFunction, loc = "input") {
+    this.fileLoc = new FileLoc(loc);
     this.logErrCB = logErrCB;
 
     this.tokenizer = new Tokenizer(input);
