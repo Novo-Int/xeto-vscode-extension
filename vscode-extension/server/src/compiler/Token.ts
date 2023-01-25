@@ -6,7 +6,6 @@ export class Token {
   static DOT = new Token(".");
   static COLON = new Token(":");
   static COMMA = new Token(",");
-  static SEMICOLON = new Token(";");
   static LT = new Token("<");
   static GT = new Token(">");
   static LBRACE = new Token("{");
@@ -15,9 +14,6 @@ export class Token {
   static RPAREN = new Token(")");
   static LBRACKET = new Token("[");
   static RBRACKET = new Token("]");
-  static POUND = new Token("#");
-  static LIB_META = new Token("#<");
-  static PRAGMA = new Token("#{");
   static QUESTION = new Token("?");
   static AMP = new Token("&");
   static PIPE = new Token("|");
@@ -31,11 +27,13 @@ export class Token {
   static UNKNOWN = new Token("unknown");
 
   private dis: string;
-  public readonly isLiteral: boolean;
+  private symbol: string;
+  public readonly isVal: boolean;
 
-  private constructor (dis: string, isLiteral = false) {
+  private constructor (dis: string, isVal = false) {
     this.dis = dis;
-    this.isLiteral = isLiteral;
+    this.symbol = dis;
+    this.isVal = isVal;
   }
 
   public toString(): string {

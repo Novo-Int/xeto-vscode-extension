@@ -27,13 +27,17 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 import fs from 'fs/promises';
+import osPath = require('path');
 
 import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
-import { CLib, CProto } from './compiler/CTypes';
 import { Dirent } from 'fs';
 import { Location } from 'vscode';
+import { Proto } from './compiler/Proto';
+import { LibraryManager } from './libraries/LibManager';
+import { PogLib } from './libraries/PogLib';
+import { findChildrenOf, findProtoByQname } from './FindProto';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -49,11 +53,13 @@ let rootFolders: string[] = [];
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
 
+const libManager: LibraryManager = new LibraryManager();
+
 const getRootFolderFromParams = (params:InitializeParams): string[] => {
 	let ret = '';
 
 	if (params.workspaceFolders) {
-		ret = params.workspaceFolders[0].uri;
+		return params.workspaceFolders.map(folder => folder.uri.replace('file://', ''));
 	} else {
 		ret = params.rootUri || '';
 	}
@@ -80,7 +86,7 @@ const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
 };
 
 const parseAllRootFolders = () => {
-	rootFolders.forEach(async folderPath => {
+	rootFolders.filter(folder => Boolean(folder)).forEach(async folderPath => {
 		const files = await addWorkspaceRootToWatch(folderPath);
 
 		const pogFiles = files.filter(path => path.endsWith('.pog'));
@@ -225,6 +231,60 @@ function fileLocToDiagPosition(loc: FileLoc): Position {
 	};
 }
 
+async function populateLibraryManager(compiler: ProtoCompiler) {
+	if (!compiler.root) {
+		return;
+	}
+
+	const split = compiler.sourceUri.split('/');
+	let hasLib = false;
+
+	try {
+		const stat = await fs.stat(osPath.join(compiler.sourceUri.replace('file:/', ''), '..', 'lib.pog'));
+		if (stat.isFile()) {
+			hasLib = true;
+		}
+	} catch {
+		return;
+	}
+
+	let libName: string | undefined = undefined;
+	let libVersion = 'unknown';
+	let libDoc = '';
+
+	if (hasLib) {
+		libName = split[split.length - 2];
+	}
+
+	const isLibMeta = compiler.sourceUri.endsWith('lib.pog');
+
+	if (isLibMeta) {
+		libName = split[split.length - 2];
+		libVersion = compiler.root?.children['pragma']?.children._version.type;
+		libDoc = compiler.root?.children['pragma']?.doc || '';
+	}
+
+	if (!libName) {
+		return;
+	}
+
+	if (!libManager.getLib(libName)) {
+		libManager.addLib(new PogLib(libName, libVersion, libDoc));
+	}
+
+	const pogLib = libManager.getLib(libName);
+
+	if (!pogLib) {
+		return;
+	}
+
+	if (!isLibMeta) {
+		Object.entries(compiler.root.children).forEach(([name, proto]) => {
+			pogLib.addChild(name, proto);
+		});
+	}
+}
+
 async function parseDocument(textDocument: TextDocument): Promise<void> {
 	const diagnostics: Diagnostic[] = [];
 	const compiler = new ProtoCompiler(textDocument.uri);
@@ -274,6 +334,12 @@ async function parseDocument(textDocument: TextDocument): Promise<void> {
 		}
 	} finally {
 		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+
+		// time to add it to the library manager
+		populateLibraryManager(compiler);
+
+		// resolve refs
+		compiler.root?.resolveRefTypes(compiler.root, libManager);
 	}
 	return;
 }
@@ -332,21 +398,6 @@ function getLargestIdentifierForPosition(doc: TextDocument, pos: Position): stri
 	return identifier.split('.');
 }
 
-function findExternalPogsOnLibName(libName: string): CProto[] {
-	let libs: CProto[] = [];
-
-	Object.values(docsToCompilerResults).filter(compiler => {
-		const deps = compiler.libs[0]?.proto?.children["_depends"]?.children;
-		
-		if (deps) {
-			const libsFound = Object.values(deps).filter(proto => proto.children["lib"].val === libName);
-			libs = libs.concat(libsFound);
-		}
-	});
-
-	return libs;
-}
-
 function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
 	// let try to find the identifier for this position
 	const compiledDocument = docsToCompilerResults[params.textDocument.uri];
@@ -362,28 +413,21 @@ function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
 		return [];
 	}
 
-	let options: string[] = compiledDocument.findChildrenOf(partialIdentifier);
+	let options: string[] = compiledDocument.root && findChildrenOf(partialIdentifier, compiledDocument.root) || [];
 
 	//	maybe the identifier is from a lib
 	if (options.length === 0) {
-		const lib = partialIdentifier.split('.')[0];
-		const libs = findExternalPogsOnLibName(lib);
+		const libName = partialIdentifier.split('.')[0];
+		const lib = libManager.getLib(libName);
 		
-		if (libs.length === 0) {
+		if (!lib) {
 			return [];
 		}
 
 		//	get compilers for files that have this lib
-		const compilerKeys = Object.keys(docsToCompilerResults).filter(file => {
-			const split = file.split('/');
-			return split[split.length-2] === libs[0].children["lib"].val;
-		});
-
 		const identifierWithoutLib = partialIdentifier.split('.').slice(1).join('.');
 
-		options = compilerKeys
-			.map(key => docsToCompilerResults[key].findChildrenOf(identifierWithoutLib))
-			.reduce((acc, current) => [...acc, ...current], []);
+		options = findChildrenOf(identifierWithoutLib, lib.rootProto);
 	}
 
 	return options.map(op => ({
@@ -403,7 +447,7 @@ connection.onCompletionResolve(
 	}
 );
 
-function getProtoFromFileLoc(uri: string, pos: Position): CProto | null {
+function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
 	// let try to find the identifier for this position
 	const compiledDocument = docsToCompilerResults[uri];
 	const doc = documents.get(uri);
@@ -418,43 +462,15 @@ function getProtoFromFileLoc(uri: string, pos: Position): CProto | null {
 		return null;
 	}
 
-	const proto = compiledDocument.findProtoByQname(identifier.join('.'));
+	const proto = compiledDocument.root && findProtoByQname(identifier.join('.'), compiledDocument.root);
 
 	if (proto) {
 		return proto;
 	} else {
-		const lib = identifier[0];
-		const libs = findExternalPogsOnLibName(lib);
+		const proto = libManager.findProtoByQName(identifier.join('.'));
 		
-		if (libs.length === 0) {
-			return null;
-		}
-
-		//	get compilers for files that have this lib
-		const compilerKeys = Object.keys(docsToCompilerResults).filter(file => {
-			const split = file.split('/');
-			return split[split.length-2] === libs[0].children["lib"].val;
-		});
-
-		const identifierWithoutLib = identifier.slice(1).join('.');
-
-		const options = compilerKeys
-			.map(key => docsToCompilerResults[key].findProtoByQname(identifierWithoutLib))
-			.reduce((acc, current) => {
-
-				if (current) {
-					return [...acc, current];
-				}
-
-				return acc;
-			}, [] as CProto[]);
-		
-		if (options[0].doc) {
-			return options[0];
-		}
+		return proto;
 	}
-
-	return null;
 }
 
 function handleHover(params: HoverParams): Hover | null {

@@ -6,22 +6,7 @@
 	"repository": {
 	  "file": {
 		"patterns": [
-			{ "include": "#pragma" },
 			{ "include": "#protos"}
-		]
-	  },
-	  "pragma": {
-		"name": "pog.pragma",
-		"begin": "#<",
-		"end": ">",
-		"beginCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"endCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"patterns": [
-			{ "include": "#protos" }
 		]
 	  },
 	  "protoMeta": {
