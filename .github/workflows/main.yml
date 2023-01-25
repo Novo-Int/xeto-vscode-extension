@@ -30,26 +30,25 @@ jobs:
       if: runner.os == 'Linux'
     - run: npm test
       if: runner.os != 'Linux'
-    - run: npm install -g vsce
-      if: runner.os == 'Linux'
-    - name: Generate extension package
-      if: success() && runner.os == 'Linux'
-      run: vsce package -o ./pog-extension.vsix
-    - name: Upload extension artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: "extension.vsix"
-        path: vscode-extension/pog-extension.vsix
   deploy:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    defaults:
+      run:
+        working-directory: ./vscode-extension
     steps:
-      - name: Download extension artifact
-        uses: actions/download-artifact@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
         with:
-          name: "extension.vsix"
+          node-version: 16.x
+      - run: npm install
+      - run: npm run compile
+      - run: npm install -g vsce
+      - name: Generate extension package
+        run: vsce package -o ./pog-extension.vsix
       - name: Push extension to release
-        if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
