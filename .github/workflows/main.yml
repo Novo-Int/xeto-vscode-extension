@@ -34,12 +34,12 @@ jobs:
       if: runner.os == 'Linux'
     - name: Generate extension package
       if: success() && runner.os == 'Linux'
-      run: vsce package -o ../pog-extension.vsix
+      run: vsce package -o ./pog-extension.vsix
     - name: Upload extension artifact
       uses: actions/upload-artifact@v3
       with:
         name: "extension.vsix"
-        path: ../pog-extension.vsix
+        path: pog-extension.vsix
   deploy:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
