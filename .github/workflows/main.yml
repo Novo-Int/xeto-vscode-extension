@@ -31,13 +31,13 @@ jobs:
       if: runner.os != 'Linux'
     - run: npm install -g vsce
       if: runner.os == 'Linux'
-    - name: Generate extension package
-      if: success() && runner.os == 'Linux'
-      run: vsce package -o ../pog-extension.vsix
   deploy:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
+      - name: Generate extension package
+        if: success() && runner.os == 'Linux'
+        run: vsce package -o ../pog-extension.vsix
       - name: Push extension to release
         if: success() && startsWith(github.ref, 'refs/tags/') && runner.os == 'Linux'
         uses: svenstaro/upload-release-action@v2
