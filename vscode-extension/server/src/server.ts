@@ -249,7 +249,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	}
 
 	let libName: string | undefined = undefined;
-	let libVersion = 'unknown';
+	let libVersion = '';
 	let libDoc = '';
 
 	if (hasLib) {
@@ -276,6 +276,10 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
 	if (!pogLib) {
 		return;
+	}
+
+	if (libVersion) {
+		pogLib.addMeta(libVersion, libDoc);
 	}
 
 	if (!isLibMeta) {

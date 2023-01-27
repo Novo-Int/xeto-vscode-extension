@@ -11,8 +11,16 @@ const metaPropsNotToParse: Record<string, boolean> = {
 
 export class Proto {
 	private _refType?: Proto;
+	private _doc?: string;
 
-	public readonly doc?: string;
+	public get doc() {
+		return this._doc;
+	}
+
+	public set doc(doc: string | undefined) {
+		this._doc = doc;
+	}
+
 	public readonly name: string;
 	public readonly type: string;
 	public readonly loc: FileLoc;
@@ -30,7 +38,7 @@ export class Proto {
 
 	constructor (name: string, type: string, loc: FileLoc, doc?: string) {
 		this.name = name;
-		this.doc = doc;
+		this._doc = doc;
 		this.type = type;
 		this.loc = loc;
 	}
