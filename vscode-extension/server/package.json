@@ -1,7 +1,7 @@
 {
 	"name": "pog-lsp",
 	"description": "Pog LSP for VSCode",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"author": "",
 	"license": "BSD-3",
 	"engines": {
