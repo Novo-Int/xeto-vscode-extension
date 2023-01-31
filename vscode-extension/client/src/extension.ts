@@ -12,6 +12,8 @@ import {
 	TransportKind
 } from 'vscode-languageclient/node';
 
+import PogProvider from './pog-contentprovider';
+
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
@@ -54,6 +56,8 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
+
+	workspace.registerTextDocumentContentProvider('pog', new PogProvider());
 }
 
 export function deactivate(): Thenable<void> | undefined {
