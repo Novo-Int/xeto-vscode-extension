@@ -46,7 +46,7 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 	const libInfoUri = `${baseURL}/${libInfo.name}/lib.pog`;
 
 	const libPog = await readUrl(libInfoUri);
-	const libInfoCompiler = new ProtoCompiler(libInfoUri);
+	const libInfoCompiler = new ProtoCompiler(libInfoUri.replace('https://', 'pog://'));
 	try {
 		libInfoCompiler.run(libPog + '\0');
 	} catch (e) {
@@ -56,13 +56,13 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 	const libVersion = libInfoCompiler.root?.children['pragma']?.children._version.type || 'unknown';
 	const libDoc = libInfoCompiler.root?.children['pragma']?.doc || '';
 
-	const lib = new PogLib(libInfo.name, libVersion, libInfoUri, libDoc);
+	const lib = new PogLib(libInfo.name, libVersion, libInfoUri.replace('https://', 'pog://'), libDoc);
 
 	// now that we have the lib read all the files
 	const filesPr = libInfo.files.map(async (fileName) => {
 		const uri = `${baseURL}/${libInfo.name}/${fileName}`;
 
-		const compiler = new ProtoCompiler(uri);
+		const compiler = new ProtoCompiler(uri.replace('https://', 'pog://'));
 		const content = await readUrl(uri);
 		compiler.run(content + '\0');
 
