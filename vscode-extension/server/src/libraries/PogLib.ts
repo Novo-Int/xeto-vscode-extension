@@ -9,12 +9,14 @@ export class PogLib {
 	}
 
 	readonly name: string;
+	readonly isExternal: boolean;
 	readonly children: Record<string, Proto> = {};
 	readonly rootProto: Proto;
 
 	constructor(name: string, version: string, fileUri: string, isExternal = false, doc = "") {
 		this.name = name;
 		this._version = version;
+		this.isExternal = isExternal;
 		this.rootProto = new Proto(name, 'sys.Root', new FileLoc(fileUri), doc);
 	}
 
