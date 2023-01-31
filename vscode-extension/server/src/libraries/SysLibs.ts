@@ -56,7 +56,7 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 	const libVersion = libInfoCompiler.root?.children['pragma']?.children._version.type || 'unknown';
 	const libDoc = libInfoCompiler.root?.children['pragma']?.doc || '';
 
-	const lib = new PogLib(libInfo.name, libVersion, libInfoUri.replace('https://', 'pog://'), libDoc);
+	const lib = new PogLib(libInfo.name, libVersion, libInfoUri.replace('https://', 'pog://'), true, libDoc);
 
 	// now that we have the lib read all the files
 	const filesPr = libInfo.files.map(async (fileName) => {

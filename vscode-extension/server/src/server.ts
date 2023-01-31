@@ -285,7 +285,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	}
 
 	if (!libManager.getLib(libName)) {
-		libManager.addLib(new PogLib(libName, libVersion, compiler.sourceUri, libDoc));
+		libManager.addLib(new PogLib(libName, libVersion, compiler.sourceUri, false, libDoc));
 	}
 
 	const pogLib = libManager.getLib(libName);
