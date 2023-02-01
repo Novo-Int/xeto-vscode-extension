@@ -17,6 +17,10 @@ export class PogLib {
 		this.name = name;
 		this._version = version;
 		this.isExternal = isExternal;
+		//	we always want this to point to lib.pog
+		if (fileUri.endsWith('lib.pog') === false) {
+			fileUri = fileUri.replace(/\/[^/]+$/, '/lib.pog');
+		}
 		this.rootProto = new Proto(name, 'sys.Root', new FileLoc(fileUri), doc);
 	}
 
