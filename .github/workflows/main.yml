@@ -24,7 +24,7 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.x
-    - run: npm install
+    - run: npm ci
     - run: npm run compile
     - run: xvfb-run -a npm test
       if: runner.os == 'Linux'
@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-      - run: npm install
+      - run: npm ci
       - run: npm run compile
       - run: npm install -g vsce
       - name: Generate extension package
@@ -56,7 +56,10 @@ jobs:
           asset_name: extension.vsix
           tag: ${{ github.ref }}
           overwrite: true
-      - run: npm run deploy
+      - name: Publish to marketplace
+        run: npm run deploy
+        env:
+         VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
 
  
