@@ -56,6 +56,7 @@ jobs:
           asset_name: extension.vsix
           tag: ${{ github.ref }}
           overwrite: true
+      - run: npm run deploy
 
 
  
