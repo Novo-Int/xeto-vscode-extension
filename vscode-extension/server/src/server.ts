@@ -51,6 +51,7 @@ let hasDiagnosticRelatedInformationCapability = false;
 let rootFolders: string[] = [];
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
+const compilersToLibs: Map<ProtoCompiler, PogLib> = new Map();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -294,6 +295,8 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 		return;
 	}
 
+	compilersToLibs.set(compiler, pogLib);
+
 	if (libVersion) {
 		pogLib.addMeta(libVersion, libDoc);
 	}
@@ -489,6 +492,17 @@ function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
 	if (proto) {
 		return proto;
 	} else {
+		// 	search in the files lib first
+		const lib = compilersToLibs.get(compiledDocument);
+
+		if (lib) {
+			const proto = findProtoByQname(identifier.join('.'), lib.rootProto);
+
+			if (proto) {
+				return proto;
+			}
+		}
+
 		const proto = libManager.findProtoByQName(identifier.join('.'));
 		
 		return proto;
