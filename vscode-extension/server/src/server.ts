@@ -268,6 +268,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	let libName: string | undefined = undefined;
 	let libVersion = '';
 	let libDoc = '';
+	const deps: string[] = [];
 
 	if (hasLib) {
 		libName = split[split.length - 2];
@@ -276,9 +277,17 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	const isLibMeta = compiler.sourceUri.endsWith('lib.pog');
 
 	if (isLibMeta) {
+		const pragma = compiler.root?.children['pragma'];
+
 		libName = split[split.length - 2];
-		libVersion = compiler.root?.children['pragma']?.children._version.type;
-		libDoc = compiler.root?.children['pragma']?.doc || '';
+		libVersion = pragma?.children._version.type;
+		libDoc = pragma?.doc || '';
+
+		const protoDeps = pragma?.children._depends?.children;
+
+		protoDeps && Object.keys(protoDeps).forEach(key => {
+			deps.push(protoDeps[key].children.lib.type);
+		});
 	}
 
 	if (!libName) {
@@ -298,7 +307,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 	compilersToLibs.set(compiler, pogLib);
 
 	if (libVersion) {
-		pogLib.addMeta(libVersion, libDoc);
+		pogLib.addMeta(libVersion, libDoc, deps);
 	}
 
 	if (!isLibMeta) {
@@ -503,7 +512,7 @@ function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
 			}
 		}
 
-		const proto = libManager.findProtoByQName(identifier.join('.'));
+		const proto = libManager.findProtoByQName(identifier.join('.'), lib?.deps);
 		
 		return proto;
 	}
