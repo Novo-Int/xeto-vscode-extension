@@ -3,9 +3,14 @@ import { Proto } from '../compiler/Proto';
 
 export class PogLib {
 	private _version: string;
+	private _deps: string[] = [];
 
 	public get version () {
 		return this._version;
+	}
+
+	public get deps () {
+		return this._deps;
 	}
 
 	readonly name: string;
@@ -29,8 +34,9 @@ export class PogLib {
 		this.rootProto.children[name] = proto;
 	}
 
-	public addMeta(version: string, doc: string) {
+	public addMeta(version: string, doc: string, deps: string[] = []) {
 		this.rootProto.doc = doc;
 		this._version = version;
+		this._deps = [...deps];
 	}
 }
