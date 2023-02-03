@@ -59,7 +59,7 @@ jobs:
       - name: Publish to marketplace
         run: npm run deploy
         env:
-         VSCE_PAT: ${{ vars.VSCE_PAT }}
+         VSCE_PAT: ${{ env.VSCE_PAT }}
 
 
  
