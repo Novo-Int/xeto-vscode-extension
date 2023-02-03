@@ -45,7 +45,14 @@ export class LibraryManager {
 		const lib = this.getLib(libName);
 
 		if (!lib) {
-			return null;
+			//	mayber this is a sys proto
+			const sysLib = this.getLib('sys');
+
+			if (!sysLib) {
+				return null;
+			}
+
+			return findProtoByQname(qname, sysLib.rootProto);
 		}
 
 		return findProtoByQname(split.slice(1).join('.'), lib.rootProto);
