@@ -38,7 +38,25 @@ export class LibraryManager {
 		return libs[registeredLibs[0]];
 	}
 
-	public findProtoByQName(qname: string): Proto | null {
+	public findProtoByQName(qname: string, desiredLibs: string[] = []): Proto | null {
+		//	if we have desiredLibs let's look there first
+		if (desiredLibs) {
+			for(let i = 0; i < desiredLibs.length; i++) {
+				const libName = desiredLibs[i];
+				const lib = this.getLib(libName);
+
+				if (!lib) {
+					continue;
+				}
+
+				const found = findProtoByQname(qname, lib.rootProto);
+
+				if (found) {
+					return found;
+				}
+			}
+		}
+
 		const split = qname.split('.');
 		const libName = split[0];
 
