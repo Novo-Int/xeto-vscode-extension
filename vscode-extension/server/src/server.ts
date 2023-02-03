@@ -381,7 +381,7 @@ connection.onDidChangeWatchedFiles(_change => {
 	connection.console.log('We received an file change event');
 });
 
-const identifierCharRegexp = /[a-zA-Z0-9_. \n\t]/;
+const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
 function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
