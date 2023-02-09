@@ -28,7 +28,7 @@ export default class PogProvider implements vscode.TextDocumentContentProvider {
 	//	this is done in provideTextDocumentContent
 	private _documents = new Map<string, string>();
 
-	provideTextDocumentContent(uri: vscode.Uri): string | Promise<string> {
+	async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
 		//	we have it cached
 		if (this._documents.get(uri.toString())) {
 			return this._documents.get(uri.toString());
