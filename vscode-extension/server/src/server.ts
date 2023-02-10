@@ -18,7 +18,9 @@ import {
 	HoverParams,
 	Hover,
 	DefinitionParams,
-	Definition
+	Definition,
+	SemanticTokensParams,
+	SemanticTokens
 } from 'vscode-languageserver/node';
 
 import {
@@ -33,7 +35,6 @@ import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from './compiler/Errors';
 import { FileLoc } from './compiler/FileLoc';
 import { Dirent } from 'fs';
-import { Location } from 'vscode';
 import { Proto } from './compiler/Proto';
 import { findChildrenOf, findProtoByQname } from './FindProto';
 import { LibraryManager, PogLib, loadSysLibsFromGH } from './libraries/';
@@ -366,7 +367,6 @@ async function parseDocument(textDocument: TextDocument): Promise<void> {
 		}
 	} finally {
 		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-
 		// time to add it to the library manager
 		populateLibraryManager(compiler);
 
@@ -556,6 +556,27 @@ function handleDefinition(params: DefinitionParams): Definition | null {
 
 connection.onDefinition(handleDefinition);
 
+function handleSemanticTokens (params: SemanticTokensParams): SemanticTokens {
+	const uri = params.textDocument.uri;
+
+	const compiler = docsToCompilerResults[uri];
+
+	if (!compiler) {
+		return {
+			data:[]
+		};
+	}
+
+	compiler.root;
+
+	return {
+		data: [
+			1, 2, 10, 0, 0
+		]
+	};
+}
+
+connection.languages.semanticTokens.on(handleSemanticTokens);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

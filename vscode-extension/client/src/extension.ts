@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { languages, workspace, ExtensionContext, SemanticTokensLegend } from 'vscode';
 
 import {
 	LanguageClient,
@@ -13,6 +13,7 @@ import {
 } from 'vscode-languageclient/node';
 
 import PogProvider from './pog-contentprovider';
+import PogSemanticTokenProvider from './pog-semanticprovider';
 
 let client: LanguageClient;
 
@@ -58,6 +59,21 @@ export function activate(context: ExtensionContext) {
 	client.start();
 
 	workspace.registerTextDocumentContentProvider('pog', new PogProvider());
+
+	const legend = (function() {
+		const tokenTypesLegend = [
+			'label'
+		];
+
+		const tokenModifiersLegend = [
+			'defaultLibrary'
+		];
+
+		return new SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
+	})();
+
+	const selector = { language: 'pog', scheme: 'file' };
+	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider(selector, new PogSemanticTokenProvider(client), legend));
 }
 
 export function deactivate(): Thenable<void> | undefined {
