@@ -38,6 +38,7 @@ import { Dirent } from 'fs';
 import { Proto } from './compiler/Proto';
 import { findChildrenOf, findProtoByQname } from './FindProto';
 import { LibraryManager, PogLib, loadSysLibsFromGH } from './libraries/';
+import { extractSemanticProtos, convertProtosToSemanticTokens } from './semantic-tokens';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -561,18 +562,17 @@ function handleSemanticTokens (params: SemanticTokensParams): SemanticTokens {
 
 	const compiler = docsToCompilerResults[uri];
 
-	if (!compiler) {
+	if (!compiler || !compiler.root) {
 		return {
 			data:[]
 		};
 	}
 
-	compiler.root;
+	const semanticProtos = extractSemanticProtos(compiler.root);
+	const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
 
 	return {
-		data: [
-			1, 2, 10, 0, 0
-		]
+		data: semanticTokens,
 	};
 }
 

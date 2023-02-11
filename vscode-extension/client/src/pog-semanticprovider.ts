@@ -13,7 +13,9 @@ export default class PogSemanticTokenProvider implements vscode.DocumentSemantic
 
 	async provideDocumentSemanticTokens(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.SemanticTokens> {
 		const results = await this._client.sendRequest('textDocument/semanticTokens/full', {
-			textDocument: document
+			textDocument: {
+				uri: document.uri.toString()
+			}
 		});
 
 		return results as vscode.SemanticTokens;
