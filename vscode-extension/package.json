@@ -29,13 +29,6 @@
 				"configuration": "./language-configuration.json"
 			}
 		],
-		"themes": [
-			{
-				"label": "pogTheme",
-				"uiTheme": "vs-dark",
-				"path": "./themes/pog-color-theme.json"
-			}
-		],
 		"grammars": [
 			{
 				"language": "pog",
@@ -61,7 +54,16 @@
 		"configurationDefaults": {
 			"[pog]": {
 				"editor.semanticHighlighting.enabled": true
-			}
+			},
+			"editor.semanticTokenColorCustomizations": {
+                "rules": {
+                    "label": {
+						"foreground": "#0cd319",
+						"bold": true,
+						"underline": true
+					}
+                }
+            }
 		}
 	},
 	"scripts": {
