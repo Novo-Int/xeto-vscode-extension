@@ -386,7 +386,7 @@ const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
 function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
-	let position = doc.offsetAt(pos);
+	let position = doc.offsetAt(pos) - 1;
 	const text = doc.getText();
 
 	// this is naive, but we go backwards until we reach a :
