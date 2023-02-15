@@ -568,7 +568,7 @@ function handleSemanticTokens (params: SemanticTokensParams): SemanticTokens {
 		};
 	}
 
-	const semanticProtos = extractSemanticProtos(compiler.root);
+	const semanticProtos = extractSemanticProtos(compiler.root, libManager);
 	const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
 
 	return {

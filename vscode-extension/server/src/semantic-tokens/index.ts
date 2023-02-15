@@ -1,4 +1,6 @@
 import { Proto } from '../compiler/Proto';
+import { findProtoByQname } from '../FindProto';
+import { LibraryManager } from '../libraries';
 
 type Pos = {
 	line: number
@@ -6,21 +8,59 @@ type Pos = {
 	length: number
 }
 
-const extractSemanticProtos = (root: Proto): Proto[] => {
+const extractSemanticProtos = (root: Proto, libManager?: LibraryManager): Proto[] => {
 	const bag: Proto[] = [];
 
-	extractSemanticProtosRecursive(root, bag);
+	extractSemanticProtosRecursive(root, root, bag, libManager);
 
 	return bag;
 };
 
-const extractSemanticProtosRecursive = (proto: Proto, bag: Proto[]): void => {
+const isMarker = (root: Proto, proto: Proto, libManager?: LibraryManager): boolean => {
+	if (!proto.type) {
+		return false;
+	}
+
 	if (proto.type === 'Marker' || proto.type === 'sys.Marker') {
+		return true;
+	}
+
+	//	maybe we have a type so we should resolve that
+	const alias = findProtoByQname(proto.type, root);
+
+	if (alias) {
+		if (alias.type === 'Marker' || alias.type === 'sys.Marker') {
+			return true;
+		}
+
+		return false;
+	}
+
+	if (!libManager) {
+		return false;
+	}
+
+	//	check in the libs
+	const libAlias = libManager.findProtoByQName(proto.type);
+
+	if (libAlias) {
+		if (libAlias.type === 'Marker' || libAlias.type === 'sys.Marker') {
+			return true;
+		}
+
+		return false;
+	}
+
+	return false;
+};
+
+const extractSemanticProtosRecursive = (root: Proto, proto: Proto, bag: Proto[], libManager?: LibraryManager): void => {
+	if (isMarker(root, proto, libManager)) {
 		bag.push(proto);
 		return;
 	}
 
-	Object.values(proto.children).forEach(proto => extractSemanticProtosRecursive(proto, bag));
+	Object.values(proto.children).forEach(proto => extractSemanticProtosRecursive(root,  proto, bag, libManager));
 };
 
 const extractPosFromProto = (proto: Proto): Pos => {
