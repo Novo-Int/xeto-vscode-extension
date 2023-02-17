@@ -25,6 +25,9 @@ const isMarker = (root: Proto, proto: Proto, libManager?: LibraryManager): boole
 		return true;
 	}
 
+	//	TO DO - we should be able to replace all this logic and use proto.refType
+	//	to check if this points to a Marker or not
+
 	//	maybe we have a type so we should resolve that
 	const alias = findProtoByQname(proto.type, root);
 
