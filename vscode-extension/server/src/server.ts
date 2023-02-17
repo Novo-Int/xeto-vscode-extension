@@ -20,7 +20,8 @@ import {
 	DefinitionParams,
 	Definition,
 	SemanticTokensParams,
-	SemanticTokens
+	SemanticTokens,
+	DocumentFormattingParams
 } from 'vscode-languageserver/node';
 
 import {
@@ -39,6 +40,8 @@ import { Proto } from './compiler/Proto';
 import { findChildrenOf, findProtoByQname } from './FindProto';
 import { LibraryManager, PogLib, loadSysLibsFromGH } from './libraries/';
 import { extractSemanticProtos, convertProtosToSemanticTokens } from './semantic-tokens';
+import { Position as VSPosition, Range, TextEdit } from 'vscode-languageserver';
+import { formatFile } from './formatting';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -129,6 +132,7 @@ connection.onInitialize((params: InitializeParams) => {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			hoverProvider: true,
 			definitionProvider: true,
+			documentFormattingProvider: true,
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true,
@@ -577,6 +581,26 @@ function handleSemanticTokens (params: SemanticTokensParams): SemanticTokens {
 }
 
 connection.languages.semanticTokens.on(handleSemanticTokens);
+
+function onDocumentFormatting (params: DocumentFormattingParams): TextEdit[] {
+	const uri = params.textDocument.uri;
+
+	const compiler = docsToCompilerResults[uri];
+
+	if (!compiler) {
+		return [];
+	}
+
+	const tokenBag = compiler.tokenBag;
+
+	if (!tokenBag || !tokenBag.length) {
+		return [];
+	}
+
+	return formatFile(tokenBag, params.options);
+}
+
+connection.onDocumentFormatting(onDocumentFormatting);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
