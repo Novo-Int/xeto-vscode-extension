@@ -1,6 +1,6 @@
 import { CompilerError, ErrorTypes } from './Errors';
 import { FileLoc } from "./FileLoc";
-import { Parser } from './Parser';
+import { Parser, TokenWithPosition } from './Parser';
 import { Proto } from './Proto';
 
 export class ProtoCompiler {
@@ -8,6 +8,8 @@ export class ProtoCompiler {
 
   public root?: Proto;
   public readonly sourceUri: string;
+
+  public tokenBag: TokenWithPosition[] = [];
 
   private ast: Record<string, unknown> = {};
 
@@ -34,5 +36,6 @@ export class ProtoCompiler {
     parseStep.parse(this.ast);
 
     this.root = Proto.fromAST(this.ast);
+    this.tokenBag = [...parseStep.tokenBag];
   }
 }

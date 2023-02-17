@@ -19,6 +19,12 @@ class ParsedProto {
   }
 }
 
+export type TokenWithPosition = {
+  token: Token
+  line: number
+  col: number
+}
+
 export class Parser {
   private fileLoc: FileLoc;
   private logErrCB: CompilerLogFunction;
@@ -34,6 +40,8 @@ export class Parser {
   private peekLine = 0; // next token line number
   private peekCol = 0; // next token col number
 
+  private _tokenBag: TokenWithPosition[] = [];
+
   public constructor(input: string, logErrCB: CompilerLogFunction, loc = "input") {
     this.fileLoc = new FileLoc(loc);
     this.logErrCB = logErrCB;
@@ -43,6 +51,10 @@ export class Parser {
     this.cur = this.peek = Token.EOF;
     this.consume();
     this.consume();
+  }
+
+  public get tokenBag(): TokenWithPosition[] {
+    return this._tokenBag;
   }
 
   public parse(root: Record<string, unknown>) {
@@ -446,6 +458,12 @@ export class Parser {
     this.curVal = this.peekVal;
     this.curLine = this.peekLine;
     this.curCol = this.peekCol;
+
+    this._tokenBag.push({
+      token: this.peek,
+      col: this.curCol,
+      line: this.curLine,
+    });
 
     try {
       this.peek = this.tokenizer.next();
