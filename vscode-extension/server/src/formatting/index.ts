@@ -107,6 +107,34 @@ export const formatFile = (
       );
     }
 
+	//	insert one space between : and whatever is next (bracket, inherited proto)
+    if (tokenBag[i].token === Token.COLON && tokenBag[i + 1]) {
+      if (tokenBag[i].line === tokenBag[i + 1].line) {
+        if (tokenBag[i + 1].col > tokenBag[i].col + 2) {
+          ret.push(
+            TextEdit.replace(
+              Range.create(
+                tokenBag[i].line,
+                tokenBag[i].col,
+                tokenBag[i + 1].line,
+                tokenBag[i + 1].col - 1
+              ),
+              " "
+            )
+          );
+        }
+
+        if (tokenBag[i + 1].col === tokenBag[i].col + 1) {
+          ret.push(
+            TextEdit.insert(
+              Position.create(tokenBag[i].line, tokenBag[i].col),
+              " "
+            )
+          );
+        }
+      }
+    }
+
     console.log(tokenBag[i]);
     i++;
   }
