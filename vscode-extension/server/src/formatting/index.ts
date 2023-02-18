@@ -1,7 +1,7 @@
 import { FormattingOptions } from "vscode-languageserver/node";
 
 import { Position, Range, TextEdit } from "vscode-languageserver";
-import { TextDocument } from 'vscode-languageserver-textdocument';
+import { TextDocument } from "vscode-languageserver-textdocument";
 import { Token } from "../compiler/Token";
 import { TokenWithPosition } from "../compiler/Parser";
 
@@ -23,6 +23,8 @@ export const formatFile = (
 
   let depth = 0;
   let i = 0;
+
+  const inputText = doc.getText();
 
   while (i < tokenBag.length) {
     if (tokenBag[i].token === Token.LBRACE) {
@@ -91,7 +93,7 @@ export const formatFile = (
       ret.push(
         TextEdit.insert(
           Position.create(tokenBag[i].line, tokenBag[i].col),
-          "\n"
+          "\n" + generateWhiteSpaces(options, depth)
         )
       );
     }
@@ -175,7 +177,27 @@ export const formatFile = (
       );
     }
 
-    console.log(tokenBag[i]);
+    if (
+      tokenBag[i].token === Token.NL &&
+      tokenBag[i + 1]?.token === Token.RBRACE
+    ) {
+      // we need to use depth-1 as the curly bracket has not been counted yet
+      const desiredWhiteSpaces = generateWhiteSpaces(options, depth - 1);
+
+      ret.push(
+        TextEdit.replace(
+          Range.create(
+            tokenBag[i + 1].line,
+            0,
+            tokenBag[i + 1].line,
+            tokenBag[i + 1].col - 1
+          ),
+          desiredWhiteSpaces
+        )
+      );
+    }
+
+    // end indent formatting
     i++;
   }
 
