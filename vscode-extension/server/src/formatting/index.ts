@@ -160,6 +160,30 @@ export const formatFile = (
       }
     }
 
+		//	no space between identifier and . DOT
+    if (
+      tokenBag[i].token === Token.ID &&
+      tokenBag[i + 1]?.token === Token.DOT
+    ) {
+      if (tokenBag[i].line === tokenBag[i + 1].line) {
+        if (
+          tokenBag[i].col + tokenBag[i].val?.trim()?.length !==
+          tokenBag[i + 1].col
+        ) {
+          ret.push(
+            TextEdit.del(
+              Range.create(
+                tokenBag[i].line,
+                tokenBag[i].col + tokenBag[i].val?.length - 1,
+                tokenBag[i + 1].line,
+                tokenBag[i + 1].col - 1
+              )
+            )
+          );
+        }
+      }
+    }
+
     //	indent formatting
     if (tokenBag[i].token === Token.NL && tokenBag[i + 1]?.token === Token.ID) {
       const desiredWhiteSpaces = generateWhiteSpaces(options, depth);
