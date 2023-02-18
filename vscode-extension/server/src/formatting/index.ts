@@ -1,6 +1,7 @@
 import { FormattingOptions } from "vscode-languageserver/node";
 
 import { Position, Range, TextEdit } from "vscode-languageserver";
+import { TextDocument } from 'vscode-languageserver-textdocument';
 import { Token } from "../compiler/Token";
 import { TokenWithPosition } from "../compiler/Parser";
 
@@ -14,6 +15,7 @@ const generateWhiteSpaces = (
 };
 
 export const formatFile = (
+  doc: TextDocument,
   tokenBag: TokenWithPosition[],
   options: FormattingOptions
 ): TextEdit[] => {
@@ -154,6 +156,23 @@ export const formatFile = (
           );
         }
       }
+    }
+
+    //	indent formatting
+    if (tokenBag[i].token === Token.NL && tokenBag[i + 1]?.token === Token.ID) {
+      const desiredWhiteSpaces = generateWhiteSpaces(options, depth);
+
+      ret.push(
+        TextEdit.replace(
+          Range.create(
+            tokenBag[i + 1].line,
+            0,
+            tokenBag[i + 1].line,
+            tokenBag[i + 1].col - 1
+          ),
+          desiredWhiteSpaces
+        )
+      );
     }
 
     console.log(tokenBag[i]);

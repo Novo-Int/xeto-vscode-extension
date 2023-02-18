@@ -21,6 +21,8 @@ class ParsedProto {
 
 export type TokenWithPosition = {
   token: Token
+  val: string
+  indexInInput: number
   line: number
   col: number
 }
@@ -461,6 +463,8 @@ export class Parser {
 
     this._tokenBag.push({
       token: this.peek,
+      val: this.tokenizer.val,
+      indexInInput: this.tokenizer.charIndex,
       col: this.curCol,
       line: this.curLine,
     });

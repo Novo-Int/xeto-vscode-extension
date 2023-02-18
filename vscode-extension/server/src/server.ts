@@ -597,7 +597,13 @@ function onDocumentFormatting (params: DocumentFormattingParams): TextEdit[] {
 		return [];
 	}
 
-	return formatFile(tokenBag, params.options);
+	const doc = documents.get(uri);
+
+	if (!doc) {
+		return [];
+	}
+
+	return formatFile(doc, tokenBag, params.options);
 }
 
 connection.onDocumentFormatting(onDocumentFormatting);
