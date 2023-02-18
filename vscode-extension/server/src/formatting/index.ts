@@ -107,7 +107,7 @@ export const formatFile = (
       );
     }
 
-	//	insert one space between : and whatever is next (bracket, inherited proto)
+    //	insert one space between : and whatever is next (bracket, inherited proto)
     if (tokenBag[i].token === Token.COLON && tokenBag[i + 1]) {
       if (tokenBag[i].line === tokenBag[i + 1].line) {
         if (tokenBag[i + 1].col > tokenBag[i].col + 2) {
@@ -129,6 +129,27 @@ export const formatFile = (
             TextEdit.insert(
               Position.create(tokenBag[i].line, tokenBag[i].col),
               " "
+            )
+          );
+        }
+      }
+    }
+
+    //	no space between . DOT and identifier
+    if (
+      tokenBag[i].token === Token.DOT &&
+      tokenBag[i + 1]?.token === Token.ID
+    ) {
+      if (tokenBag[i].line === tokenBag[i + 1].line) {
+        if (tokenBag[i].col + 1 !== tokenBag[i + 1].col) {
+          ret.push(
+            TextEdit.del(
+              Range.create(
+                tokenBag[i].line,
+                tokenBag[i].col,
+                tokenBag[i + 1].line,
+                tokenBag[i + 1].col - 1
+              )
             )
           );
         }
