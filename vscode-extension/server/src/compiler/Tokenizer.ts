@@ -81,6 +81,7 @@ export class Tokenizer {
       }
       this.consume();
       this.tok = Token.NL;
+      this.val= '\n';
       return this.tok;
     }
 
