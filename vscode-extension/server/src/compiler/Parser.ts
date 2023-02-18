@@ -464,7 +464,7 @@ export class Parser {
     this._tokenBag.push({
       token: this.peek,
       val: this.tokenizer.val,
-      indexInInput: this.tokenizer.charIndex,
+      indexInInput: this.tokenizer.charIndex - this.tokenizer.val?.length,
       col: this.curCol,
       line: this.curLine,
     });
