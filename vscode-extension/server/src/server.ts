@@ -40,7 +40,7 @@ import { Proto } from './compiler/Proto';
 import { findChildrenOf, findProtoByQname } from './FindProto';
 import { LibraryManager, PogLib, loadSysLibsFromGH } from './libraries/';
 import { extractSemanticProtos, convertProtosToSemanticTokens } from './semantic-tokens';
-import { Position as VSPosition, Range, TextEdit } from 'vscode-languageserver';
+import { TextEdit } from 'vscode-languageserver';
 import { formatFile } from './formatting';
 
 // Create a connection for the server, using Node's IPC as a transport.
