@@ -91,8 +91,8 @@ export const formatFile = (
       tokenBag[i + 1].token !== Token.NL
     ) {
       ret.push(
-        TextEdit.insert(
-          Position.create(tokenBag[i].line, tokenBag[i].col),
+        TextEdit.replace(
+          Range.create(tokenBag[i].line, tokenBag[i].col, tokenBag[i+1].line, tokenBag[i+1].col - 1),
           "\n" + generateWhiteSpaces(options, depth)
         )
       );
