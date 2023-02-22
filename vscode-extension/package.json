@@ -3,7 +3,7 @@
 	"description": "A pog extension",
 	"displayName": "Pog",
 	"license": "MIT",
-	"version": "0.1.9",
+	"version": "0.1.10",
 	"categories": [],
 	"keywords": [
 		"multi-root ready"
