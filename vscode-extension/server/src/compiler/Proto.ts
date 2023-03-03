@@ -62,7 +62,9 @@ export class Proto {
 	}
 
 	private static fromPartialAST(name: string, ast: Record<string, any>): Proto {
-		const proto = new Proto(name, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
+		//	we add _ for meta names so we'll remove it here
+		const originalName = name.startsWith('_') ? name.substring(1) : name;
+		const proto = new Proto(originalName, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
 
 		Object.keys(ast)
 			.filter(key => !metaPropsNotToParse[key])
