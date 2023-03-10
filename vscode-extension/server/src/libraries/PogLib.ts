@@ -5,6 +5,9 @@ export class PogLib {
 	private _version: string;
 	private _deps: string[] = [];
 
+	//	higher priority overrides lower priority
+	private _includePriority = 0;
+
 	public get version () {
 		return this._version;
 	}
@@ -17,6 +20,14 @@ export class PogLib {
 	readonly isExternal: boolean;
 	readonly children: Record<string, Proto> = {};
 	readonly rootProto: Proto;
+
+	public get includePriority () {
+		return this._includePriority;
+	}
+
+	public set includePriority (val: number) {
+		this._includePriority = val;
+	}
 
 	constructor(name: string, version: string, fileUri: string, isExternal = false, doc = "") {
 		this.name = name;
