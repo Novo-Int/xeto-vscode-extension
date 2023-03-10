@@ -167,7 +167,7 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 	const settings = await connection.workspace.getConfiguration("pog");
 
 	loadSysLibsFromGH(settings.libraries.sys, libManager);
-	loadExtLibs(settings.libraries.local, libManager);
+	loadExtLibs(settings.libraries.external, libManager);
 
 	return {
 		capabilities: {
