@@ -2,13 +2,12 @@ import { Proto } from '../compiler/Proto';
 import { findProtoByQname } from '../FindProto';
 import { PogLib } from './PogLib';
 
+const NAME_SEPARATOR = "#";
 export class LibraryManager {
 	private libs: Record<string, Record<string, PogLib>> = {};
 
 	private getLibHash(lib: PogLib): string {
-		//	we may want to add lib.version to the hash
-		//	when we know for sure that a lib is only created with a version
-		return `${lib.name}-${lib.isExternal ? 'external' : 'local'}`;
+		return `${lib.name}${NAME_SEPARATOR}${lib.includePriority}`;
 	}
 
 	public addLib(lib: PogLib): void {
@@ -29,13 +28,11 @@ export class LibraryManager {
 		}
 
 		const registeredLibs = Object.keys(libs);
-		const localKeys = registeredLibs.filter(key => key.endsWith('local'));
 
-		if (localKeys.length !== 0) {
-			return libs[localKeys[0]];
-		}
+		//	get the one with the highest number
+		const highestKey = Math.max(...registeredLibs.map(key => parseInt(key.split(NAME_SEPARATOR)[1])));
 
-		return libs[registeredLibs[0]];
+		return libs[`${name}${NAME_SEPARATOR}${highestKey}`];
 	}
 
 	public findProtoByQName(qname: string, desiredLibs: string[] = []): Proto | null {

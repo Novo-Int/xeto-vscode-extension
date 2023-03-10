@@ -5,7 +5,7 @@ import { ProtoCompiler } from "../compiler/Compiler";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-const loadExtLib = (root: string, lm: LibraryManager) => {
+const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
   try {
     const files = fs.readdirSync(root, { withFileTypes: true });
     const libName = path.basename(root);
@@ -21,7 +21,8 @@ const loadExtLib = (root: string, lm: LibraryManager) => {
       "unknown";
     const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
 
-    const lib = new PogLib(libName, libVersion, root, true, libDoc);
+    const lib = new PogLib(libName, libVersion, root, libDoc);
+	lib.includePriority = priority;
 
     //	parse all files
     files
@@ -54,11 +55,11 @@ const loadExtLib = (root: string, lm: LibraryManager) => {
 const isFolderLib = (path: string): boolean => fs.existsSync(`${path}/lib.pog`);
 
 export const loadExtLibs = (sources: string[], lm: LibraryManager) => {
-  sources.forEach((root) => {
+  sources.forEach((root, index) => {
     try {
       //	check if we have a single lib or this is a repo of multiple libs
       if (isFolderLib(root)) {
-        loadExtLib(root, lm);
+        loadExtLib(root, lm, sources.length - index);
       } else {
         //	it doesn't have a lib.pog, so check all the folders and check if those are libs
         const entries = fs.readdirSync(root, { withFileTypes: true });
@@ -67,7 +68,7 @@ export const loadExtLibs = (sources: string[], lm: LibraryManager) => {
             (entry) =>
               entry.isDirectory() && isFolderLib(`${root}/${entry.name}`)
           )
-          .map((dir) => loadExtLib(`${root}/${dir.name}`, lm));
+          .map((dir) => loadExtLib(`${root}/${dir.name}`, lm, sources.length - index));
       }
     } catch (e) {
       console.log(e);

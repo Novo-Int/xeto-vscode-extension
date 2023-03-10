@@ -6,7 +6,10 @@ export class PogLib {
 	private _deps: string[] = [];
 
 	//	higher priority overrides lower priority
-	private _includePriority = 0;
+	//	by default we give a high priority to all libs
+	//	sys libs have -1
+	//	other loaded libs via configs start from 0 and go to the number of entries in the lists
+	private _includePriority = 100;
 
 	public get version () {
 		return this._version;
@@ -17,7 +20,6 @@ export class PogLib {
 	}
 
 	readonly name: string;
-	readonly isExternal: boolean;
 	readonly children: Record<string, Proto> = {};
 	readonly rootProto: Proto;
 
@@ -29,10 +31,9 @@ export class PogLib {
 		this._includePriority = val;
 	}
 
-	constructor(name: string, version: string, fileUri: string, isExternal = false, doc = "") {
+	constructor(name: string, version: string, fileUri: string, doc = "") {
 		this.name = name;
 		this._version = version;
-		this.isExternal = isExternal;
 		//	we always want this to point to lib.pog
 		if (fileUri.endsWith('lib.pog') === false) {
 			fileUri = fileUri.replace(/\/[^/]+$/, '/lib.pog');
