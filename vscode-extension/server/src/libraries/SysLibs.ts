@@ -2,7 +2,7 @@ import { ProtoCompiler } from '../compiler/Compiler';
 import { LibraryManager } from './LibManager';
 import { PogLib } from './PogLib';
 
-import https from 'node:https';
+import { readUrl } from './utils';
 
 const librariesToAdd = [ {
 		name: 'sys',
@@ -15,25 +15,6 @@ const librariesToAdd = [ {
 		files: ['points.pog'] as string[],
 	}
 ] as const;
-
-const readUrl = (url: string): Promise<string> => {
-	const pr = new Promise<string>((res, rej) => {
-		https.get(url, (resp) => {
-			let data = '';
-	
-			resp.on('data', chunk => {
-				data += chunk;
-			});
-	
-			resp.on('end', () => {
-				res(data);
-			});
-		});
-
-	});
-
-	return pr;
-};
 
 const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: number): Promise<void> => {
 	if (index >= librariesToAdd.length) {

@@ -1,6 +1,7 @@
 import { LibraryManager } from "./LibManager";
 import { PogLib } from "./PogLib";
 import { ProtoCompiler } from "../compiler/Compiler";
+import { readUrl } from "./utils";
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -22,7 +23,7 @@ const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
     const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
 
     const lib = new PogLib(libName, libVersion, root, libDoc);
-	lib.includePriority = priority;
+    lib.includePriority = priority;
 
     //	parse all files
     files
@@ -52,26 +53,91 @@ const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
   }
 };
 
+const loadExtLibFromWeb = async (
+  def: ExtLibDef,
+  lm: LibraryManager,
+  priority: number
+) => {
+  const libInfoUri = def.lib;
+
+  const libPog = await readUrl(libInfoUri);
+  const libInfoCompiler = new ProtoCompiler(
+    libInfoUri.replace("https://", "pog://")
+  );
+  try {
+    libInfoCompiler.run(libPog);
+  } catch (e) {
+    console.log(e);
+  }
+
+  const libVersion =
+    libInfoCompiler.root?.children["pragma"]?.children._version.type ||
+    "unknown";
+  const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
+
+  const lib = new PogLib(
+    def.name,
+    libVersion,
+    libInfoUri.replace("https://", "pog://"),
+    libDoc
+  );
+  lib.includePriority = -1;
+
+  // now that we have the lib read all the files
+  const filesPr = def.files.map(async (uri) => {
+    const compiler = new ProtoCompiler(uri.replace("https://", "pog://"));
+    const content = await readUrl(uri);
+    compiler.run(content + "\0");
+
+    if (!compiler.root) {
+      return;
+    }
+
+    Object.entries(compiler.root.children).forEach(([name, proto]) => {
+      lib.addChild(name, proto);
+    });
+  });
+
+  await Promise.all(filesPr);
+
+  lm.addLib(lib);
+};
+
 const isFolderLib = (path: string): boolean => fs.existsSync(`${path}/lib.pog`);
 
-export const loadExtLibs = (sources: string[], lm: LibraryManager) => {
+export const loadExtLibs = (
+  sources: (string | ExtLibDef)[],
+  lm: LibraryManager
+) => {
   sources.forEach((root, index) => {
     try {
-      //	check if we have a single lib or this is a repo of multiple libs
-      if (isFolderLib(root)) {
-        loadExtLib(root, lm, sources.length - index);
+      if (typeof root === "string") {
+        //	check if we have a single lib or this is a repo of multiple libs
+        if (isFolderLib(root)) {
+          loadExtLib(root, lm, sources.length - index);
+        } else {
+          //	it doesn't have a lib.pog, so check all the folders and check if those are libs
+          const entries = fs.readdirSync(root, { withFileTypes: true });
+          entries
+            .filter(
+              (entry) =>
+                entry.isDirectory() && isFolderLib(`${root}/${entry.name}`)
+            )
+            .map((dir) =>
+              loadExtLib(`${root}/${dir.name}`, lm, sources.length - index)
+            );
+        }
       } else {
-        //	it doesn't have a lib.pog, so check all the folders and check if those are libs
-        const entries = fs.readdirSync(root, { withFileTypes: true });
-        entries
-          .filter(
-            (entry) =>
-              entry.isDirectory() && isFolderLib(`${root}/${entry.name}`)
-          )
-          .map((dir) => loadExtLib(`${root}/${dir.name}`, lm, sources.length - index));
+        loadExtLibFromWeb(root, lm, sources.length - index);
       }
     } catch (e) {
       console.log(e);
     }
   });
+};
+
+export type ExtLibDef = {
+  name: string;
+  lib: string;
+  files: string[];
 };

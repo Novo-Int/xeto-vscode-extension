@@ -38,7 +38,7 @@ import { FileLoc } from './compiler/FileLoc';
 import { Dirent } from 'fs';
 import { Proto } from './compiler/Proto';
 import { findChildrenOf, findProtoByQname } from './FindProto';
-import { LibraryManager, PogLib, loadSysLibsFromGH, loadExtLibs } from './libraries/';
+import { LibraryManager, PogLib, loadSysLibsFromGH, loadExtLibs, ExtLibDef } from './libraries/';
 import { extractSemanticProtos, convertProtosToSemanticTokens } from './semantic-tokens';
 import { TextEdit } from 'vscode-languageserver';
 import { formatFile } from './formatting';
@@ -167,7 +167,7 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 	const settings = await connection.workspace.getConfiguration("pog");
 
 	loadSysLibsFromGH(settings.libraries.sys, libManager);
-	loadExtLibs(settings.libraries.external, libManager);
+	loadExtLibs(settings.libraries.external as (string | ExtLibDef)[], libManager);
 
 	return {
 		capabilities: {
