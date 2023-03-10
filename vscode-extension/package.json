@@ -48,7 +48,7 @@
 				"pog.libraries.external": {
 					"type": "array",
 					"default": [],
-					"markdownDescription": "A list of folder locations inside the local file system that contains pog libraries. The extension will load all the libraries found at that location and this takes precedence over any sys lib. The order of the folders inside this array is important. Libs closer to the top of the list take precedence over ones defined lower in the array."
+					"markdownDescription": "A list of locations for external libraries.\nThe entries can be either: \n* strings\n   * this needs to be a path to the local file system that vscode can access\n  * if the folder contains a **lib.pog** file then it is treated as a single library\n  * if **lib.pog** is missing, then each folder (just one level deep) is searched and considered a lib if **lib.pog** exists\n  * anything else is ignored\n* an object that describes the desired library. This is mostly used for **URLs**. The object should have the following structure\n   * **name**: name of the lib\n   * **lib**: URL path to **lib.pog** file. Version and docs will be read from this\n   * **files**: a string array with the URL to all the files of the lib\n\n Example of a lib entry: \n \n{\n \"name\": \"fakelib\",\n \"lib\": \"https://ex.com/fakelib/lib.pog\",\n  \"files\": [\n   \"https://ex.com/fakelib/meta.pog\"\n   \"https://ex.com/fakelib/tags.pog\"\n ]\n}\n \nIn case of name clashing libraries at **the top** of the array take precedence over libraries of the same name but **lower** in the array."
 				}
 			}
 		},
