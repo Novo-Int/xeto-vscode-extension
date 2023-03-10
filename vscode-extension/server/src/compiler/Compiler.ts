@@ -32,6 +32,10 @@ export class ProtoCompiler {
   }
 
   public run(input: string) {
+    if (!input.endsWith('\0')) {
+      input += '\0';
+    }
+
     const parseStep = new Parser(input, this.logErr.bind(this), this.sourceUri);
     parseStep.parse(this.ast);
 
