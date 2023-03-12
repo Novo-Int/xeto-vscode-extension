@@ -450,17 +450,17 @@ function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
   return identifier;
 }
 
-function getIdentifierLength(
-  doc: TextDocument,
-  pos: Position
-): number {
+function getIdentifierLength(doc: TextDocument, pos: Position): number {
   let position = doc.offsetAt(pos) - 1;
   let length = 0;
   const text = doc.getText();
 
-  while (position >= -1 && text.charAt(position).match(identifierSegmentCharRegexp)) {
+  while (
+    position >= -1 &&
+    text.charAt(position).match(identifierSegmentCharRegexp)
+  ) {
     position--;
-	length++;
+    length++;
   }
 
   return length;
@@ -710,8 +710,9 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
   }
 
   const protoName = compiler.getQNameByLocation({
-	line: params.position.line,
-	character: params.position.character - getIdentifierLength(doc, params.position) + 1
+    line: params.position.line,
+    character:
+      params.position.character - getIdentifierLength(doc, params.position) + 1,
   });
 
   const proto =
@@ -773,6 +774,32 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
 
   //  if proto is part of a lib then we need to add the lib name to it also
   const lib = compilersToLibs.get(compiler);
+  if (lib) {
+    //  refactor in entire workspace
+    Object.keys(docsToCompilerResults).forEach((docUri) => {
+      //	skip current doc
+      if (docUri === uri) {
+        return;
+      }
+
+      const doc = documents.get(docUri);
+
+      if (!doc) {
+        return;
+      }
+
+      const edits = renameInDoc(
+        params,
+        lib.name + "." + protoName,
+        doc,
+        docsToCompilerResults[docUri]
+      );
+
+      if (edits.length) {
+        workspaceEdit.changes[docUri] = edits;
+      }
+    });
+  }
 
   return workspaceEdit;
 }
