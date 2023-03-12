@@ -1,6 +1,16 @@
 import { DocumentSymbol, SymbolKind } from "vscode-languageserver";
 import { Proto } from "../compiler/Proto";
 
+const isProtoArray = (p: Proto): boolean => {
+  try {
+    return Object.keys(p.children)
+      .map((key) => parseInt(key.substring(1)))
+      .every((k) => isNaN(k) === false);
+  } catch {
+    return false;
+  }
+};
+
 const getSymbolType = (p: Proto): SymbolKind => {
   if (p.name === "of" || p.name === "is") {
     return SymbolKind.Operator;
@@ -53,6 +63,11 @@ const getSymbolType = (p: Proto): SymbolKind => {
 
   if (Object.keys(p.children).length === 0) {
     return SymbolKind.Property;
+  }
+
+  //  maybe it's an array
+  if (isProtoArray(p)) {
+    return SymbolKind.Array;
   }
 
   return SymbolKind.Namespace;
