@@ -17,8 +17,8 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
   Object.keys(symbols).forEach((symbolName) => {
     const loc = symbols[symbolName].loc;
 
-    ret.push({
-      name: symbolName,
+    const docSymbol: DocumentSymbol = {
+      name: symbolName.replace(/_(.*)/, '$1'),
       kind: getSymbolType(symbols[symbolName]),
       range: {
         start: {
@@ -40,7 +40,13 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
           character: loc.col + symbols[symbolName].name.length,
         },
       },
-    });
+    };
+
+	if (Object.keys(symbols[symbolName].children).length) {
+		docSymbol.children = generateSymbols(symbols[symbolName]);
+	}
+
+    ret.push(docSymbol);
   });
 
   return ret;
