@@ -17,6 +17,10 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
   Object.keys(symbols).forEach((symbolName) => {
     const loc = symbols[symbolName].loc;
 
+	if (!loc || !loc.line || !loc.col) {
+		return;
+	}
+
     const docSymbol: DocumentSymbol = {
       name: symbolName.replace(/_(.*)/, '$1'),
       kind: getSymbolType(symbols[symbolName]),
