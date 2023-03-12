@@ -61,6 +61,15 @@ const getSymbolType = (p: Proto): SymbolKind => {
     return SymbolKind.Number;
   }
 
+  if (
+    p.name === "None" ||
+    p.refType?.name === "None" ||
+    p.type === "None" ||
+    p.type === "sys.None"
+  ) {
+    return SymbolKind.Null;
+  }
+
   if (Object.keys(p.children).length === 0) {
     return SymbolKind.Property;
   }
