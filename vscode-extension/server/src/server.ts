@@ -34,7 +34,7 @@ import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
 import { Dirent } from "fs";
 import { Proto } from "./compiler/Proto";
-import { findChildrenOf, findProtoByQname } from "./FindProto";
+import { findChildrenOf, findProtoByQname, findRefsToProto } from "./FindProto";
 import {
   LibraryManager,
   PogLib,
@@ -49,12 +49,12 @@ import {
 import {
   DocumentSymbol,
   DocumentSymbolParams,
-  SymbolInformation,
-  SymbolKind,
+  RenameParams,
   TextEdit,
+  WorkspaceEdit,
 } from "vscode-languageserver";
 import { formatFile } from "./formatting";
-import { generateSymbols } from './symbols';
+import { generateSymbols } from "./symbols";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -158,6 +158,7 @@ connection.onInitialize((params: InitializeParams) => {
       definitionProvider: true,
       documentFormattingProvider: true,
       documentSymbolProvider: true,
+      renameProvider: true,
       // Tell the client that this server supports code completion.
       completionProvider: {
         resolveProvider: true,
@@ -680,6 +681,60 @@ function onDocumentFormatting(params: DocumentFormattingParams): TextEdit[] {
 }
 
 connection.onDocumentFormatting(onDocumentFormatting);
+
+function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
+  const uri = params.textDocument.uri;
+
+  const compiler = docsToCompilerResults[uri];
+  const doc = documents.get(params.textDocument.uri);
+
+  if (!compiler || !doc) {
+    return null;
+  }
+
+  const protoName = getIdentifierForPosition(doc, params.position);
+  const proto =
+    (compiler.root && findProtoByQname(protoName, compiler.root)) || null;
+
+  if (!proto) {
+    return null;
+  }
+
+  const workspaceEdit = {
+    changes: {},
+  } as {
+    changes: Record<string, TextEdit[]>;
+  };
+
+  //  we have a proto, we need to find all references to it
+  //  first we'll look into the current doc
+  const refs =
+    (compiler.root && findRefsToProto(proto.name, compiler.root)) || [];
+
+  if (refs) {
+    workspaceEdit.changes[uri] = [];
+    const text = doc.getText();
+
+    //	add the TextEdits
+    for (const ref of refs) {
+      const startOfReplace = text.indexOf(proto.name, ref.loc.charIndex);
+
+      const edit = {
+        range: {
+			start: doc.positionAt(startOfReplace),
+			end: doc.positionAt(startOfReplace + proto.name.length),
+		},
+        newText: params.newName,
+      };
+
+      workspaceEdit.changes[uri].push(edit);
+    }
+  }
+
+  return workspaceEdit;
+}
+
+connection.onRenameRequest(onSymbolRename);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

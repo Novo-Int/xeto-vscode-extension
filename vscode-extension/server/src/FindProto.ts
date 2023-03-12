@@ -66,3 +66,21 @@ export const findProtoByQname = (qname: string, root: Proto): Proto | null => {
 
 	return ret;
 };
+
+export const findRefsToProto = (qname: string, root: Proto): Proto[] => {
+  const ret: Proto[] = [];
+
+  Object.keys(root.children).forEach((key) => {
+    const proto = root.children[key];
+
+    if (proto.type?.startsWith(qname)) {
+      ret.push(proto);
+    }
+
+    if (Object.keys(proto.children).length) {
+      ret.push(...findRefsToProto(qname, proto));
+    }
+  });
+
+  return ret;
+};
