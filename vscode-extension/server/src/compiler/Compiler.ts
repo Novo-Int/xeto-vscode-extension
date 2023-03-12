@@ -1,7 +1,7 @@
-import { CompilerError, ErrorTypes } from './Errors';
+import { CompilerError, ErrorTypes } from "./Errors";
 import { FileLoc } from "./FileLoc";
-import { Parser, TokenWithPosition } from './Parser';
-import { Proto } from './Proto';
+import { Parser, TokenWithPosition } from "./Parser";
+import { Proto } from "./Proto";
 
 export class ProtoCompiler {
   public errs: CompilerError[] = [];
@@ -23,7 +23,11 @@ export class ProtoCompiler {
 
   public logErr(err: CompilerError): void;
   public logErr(msg: string, type: ErrorTypes, where: FileLoc): void;
-  public logErr(msg: string | CompilerError, type?: ErrorTypes, where?: FileLoc): void {
+  public logErr(
+    msg: string | CompilerError,
+    type?: ErrorTypes,
+    where?: FileLoc
+  ): void {
     if (this.isCompilerError(msg)) {
       this.errs.push(msg);
     } else {
@@ -32,8 +36,8 @@ export class ProtoCompiler {
   }
 
   public run(input: string) {
-    if (!input.endsWith('\0')) {
-      input += '\0';
+    if (!input.endsWith("\0")) {
+      input += "\0";
     }
 
     const parseStep = new Parser(input, this.logErr.bind(this), this.sourceUri);
@@ -41,5 +45,35 @@ export class ProtoCompiler {
 
     this.root = Proto.fromAST(this.ast);
     this.tokenBag = [...parseStep.tokenBag];
+  }
+
+  public getQNameByLocation(
+    location: { line: number; character: number },
+    root = this.root
+  ): string {
+    if (!root) {
+      return "";
+    }
+
+    const childrenNames = Object.keys(root.children);
+
+    for (let i = 0; i < childrenNames.length; i++) {
+      const proto = root.children[childrenNames[i]];
+
+      if (
+        proto?.loc.line === location.line &&
+        proto?.loc.col === location.character
+      ) {
+        return proto.name;
+      }
+
+      const depthName = this.getQNameByLocation(location, proto);
+
+      if (depthName) {
+        return proto.name + "." + depthName;
+      }
+    }
+
+    return "";
   }
 }

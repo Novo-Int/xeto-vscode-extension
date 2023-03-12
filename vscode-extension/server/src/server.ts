@@ -450,6 +450,22 @@ function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
   return identifier;
 }
 
+function getIdentifierLength(
+  doc: TextDocument,
+  pos: Position
+): number {
+  let position = doc.offsetAt(pos) - 1;
+  let length = 0;
+  const text = doc.getText();
+
+  while (position >= -1 && text.charAt(position).match(identifierSegmentCharRegexp)) {
+    position--;
+	length++;
+  }
+
+  return length;
+}
+
 function getLargestIdentifierForPosition(
   doc: TextDocument,
   pos: Position
@@ -693,7 +709,11 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     return null;
   }
 
-  const protoName = getIdentifierForPosition(doc, params.position);
+  const protoName = compiler.getQNameByLocation({
+	line: params.position.line,
+	character: params.position.character - getIdentifierLength(doc, params.position) + 1
+  });
+
   const proto =
     (compiler.root && findProtoByQname(protoName, compiler.root)) || null;
 
@@ -723,28 +743,36 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
       },
       newText: params.newName,
     },
-    ...renameInDoc(params, proto, doc, compiler),
+    ...renameInDoc(params, protoName, doc, compiler),
   ];
 
   //  refactor in entire workspace
-  Object.keys(docsToCompilerResults).forEach(docUri => {
-	//	skip current doc
-	if (docUri === uri) {
-		return;
-	}
+  Object.keys(docsToCompilerResults).forEach((docUri) => {
+    //	skip current doc
+    if (docUri === uri) {
+      return;
+    }
 
-	const doc = documents.get(docUri);
+    const doc = documents.get(docUri);
 
-	if (!doc) {
-		return;
-	}
+    if (!doc) {
+      return;
+    }
 
-	const edits = renameInDoc(params, proto, doc, docsToCompilerResults[docUri]);
+    const edits = renameInDoc(
+      params,
+      protoName,
+      doc,
+      docsToCompilerResults[docUri]
+    );
 
-	if (edits.length) {
-		workspaceEdit.changes[docUri] = edits;
-	}
+    if (edits.length) {
+      workspaceEdit.changes[docUri] = edits;
+    }
   });
+
+  //  if proto is part of a lib then we need to add the lib name to it also
+  const lib = compilersToLibs.get(compiler);
 
   return workspaceEdit;
 }
