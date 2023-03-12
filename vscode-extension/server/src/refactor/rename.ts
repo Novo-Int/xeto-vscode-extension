@@ -1,7 +1,6 @@
 import { RenameParams, TextEdit } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { ProtoCompiler } from "../compiler/Compiler";
-import { Proto } from "../compiler/Proto";
 import { findRefsToProto } from "../FindProto";
 
 export const renameInDoc = (
