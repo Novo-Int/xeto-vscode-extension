@@ -700,6 +700,11 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     return null;
   }
 
+  //  bail out if replacing with the same string
+  if (proto.name === params.newName) {
+    return null;
+  }
+
   const workspaceEdit = {
     changes: {},
   } as {
@@ -711,8 +716,20 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
   const refs =
     (compiler.root && findRefsToProto(proto.name, compiler.root)) || [];
 
+  workspaceEdit.changes[uri] = [
+    {
+      range: {
+        start: {
+			character: params.position.character - proto.name.length,
+			line: params.position.line
+		},
+        end: params.position,
+      },
+      newText: params.newName,
+    },
+  ];
+
   if (refs) {
-    workspaceEdit.changes[uri] = [];
     const text = doc.getText();
 
     //	add the TextEdits
@@ -721,9 +738,9 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
 
       const edit = {
         range: {
-			start: doc.positionAt(startOfReplace),
-			end: doc.positionAt(startOfReplace + proto.name.length),
-		},
+          start: doc.positionAt(startOfReplace),
+          end: doc.positionAt(startOfReplace + proto.name.length),
+        },
         newText: params.newName,
       };
 
