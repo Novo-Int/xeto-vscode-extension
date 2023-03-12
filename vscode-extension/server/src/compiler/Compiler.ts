@@ -61,8 +61,8 @@ export class ProtoCompiler {
       const proto = root.children[childrenNames[i]];
 
       if (
-        proto?.loc.line === location.line &&
-        proto?.loc.col === location.character
+        proto?.loc?.line === location.line &&
+        proto?.loc?.col === location.character
       ) {
         return proto.name;
       }
