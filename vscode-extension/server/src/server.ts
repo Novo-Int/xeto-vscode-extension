@@ -2,46 +2,58 @@
  * Copyright (c) Novi-Studio
  * ------------------------------------------------------------------------------------------ */
 import {
-	createConnection,
-	TextDocuments,
-	Diagnostic,
-	DiagnosticSeverity,
-	ProposedFeatures,
-	InitializeParams,
-	DidChangeConfigurationNotification,
-	CompletionItem,
-	CompletionItemKind,
-	TextDocumentSyncKind,
-	InitializeResult,
-	CompletionParams,
-	DidChangeWatchedFilesNotification,
-	HoverParams,
-	Hover,
-	DefinitionParams,
-	Definition,
-	SemanticTokensParams,
-	SemanticTokens,
-	DocumentFormattingParams
-} from 'vscode-languageserver/node';
+  createConnection,
+  TextDocuments,
+  Diagnostic,
+  DiagnosticSeverity,
+  ProposedFeatures,
+  InitializeParams,
+  DidChangeConfigurationNotification,
+  CompletionItem,
+  CompletionItemKind,
+  TextDocumentSyncKind,
+  InitializeResult,
+  CompletionParams,
+  DidChangeWatchedFilesNotification,
+  HoverParams,
+  Hover,
+  DefinitionParams,
+  Definition,
+  SemanticTokensParams,
+  SemanticTokens,
+  DocumentFormattingParams,
+} from "vscode-languageserver/node";
 
-import {
-	Position,
-	TextDocument
-} from 'vscode-languageserver-textdocument';
+import { Position, TextDocument } from "vscode-languageserver-textdocument";
 
-import fs from 'fs/promises';
-import osPath = require('path');
+import fs from "fs/promises";
+import osPath = require("path");
 
 import { ProtoCompiler } from "./compiler/Compiler";
-import { CompilerError } from './compiler/Errors';
-import { FileLoc } from './compiler/FileLoc';
-import { Dirent } from 'fs';
-import { Proto } from './compiler/Proto';
-import { findChildrenOf, findProtoByQname } from './FindProto';
-import { LibraryManager, PogLib, loadSysLibsFromGH, loadExtLibs, ExtLibDef } from './libraries/';
-import { extractSemanticProtos, convertProtosToSemanticTokens } from './semantic-tokens';
-import { TextEdit } from 'vscode-languageserver';
-import { formatFile } from './formatting';
+import { CompilerError } from "./compiler/Errors";
+import { FileLoc } from "./compiler/FileLoc";
+import { Dirent } from "fs";
+import { Proto } from "./compiler/Proto";
+import { findChildrenOf, findProtoByQname } from "./FindProto";
+import {
+  LibraryManager,
+  PogLib,
+  loadSysLibsFromGH,
+  loadExtLibs,
+  ExtLibDef,
+} from "./libraries/";
+import {
+  extractSemanticProtos,
+  convertProtosToSemanticTokens,
+} from "./semantic-tokens";
+import {
+  DocumentSymbol,
+  DocumentSymbolParams,
+  SymbolInformation,
+  SymbolKind,
+  TextEdit,
+} from "vscode-languageserver";
+import { formatFile } from "./formatting";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -60,141 +72,161 @@ const compilersToLibs: Map<ProtoCompiler, PogLib> = new Map();
 
 const libManager: LibraryManager = new LibraryManager();
 
-const getRootFolderFromParams = (params:InitializeParams): string[] => {
-	let ret = '';
+const getRootFolderFromParams = (params: InitializeParams): string[] => {
+  let ret = "";
 
-	if (params.workspaceFolders) {
-		return params.workspaceFolders.map(folder => folder.uri.replace('file://', ''));
-	} else {
-		ret = params.rootUri || '';
-	}
+  if (params.workspaceFolders) {
+    return params.workspaceFolders.map((folder) =>
+      folder.uri.replace("file://", "")
+    );
+  } else {
+    ret = params.rootUri || "";
+  }
 
-	ret = ret.replace('file://', '');
+  ret = ret.replace("file://", "");
 
-	return [ret];
+  return [ret];
 };
 
 const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
-	const files = await fs.readdir(uri, {
-		withFileTypes: true,
-	});
+  const files = await fs.readdir(uri, {
+    withFileTypes: true,
+  });
 
-	await Promise.all(files.map((dirEntry: Dirent) => {
-		if (dirEntry.isDirectory()) {
-			return addWorkspaceRootToWatch(`${uri}/${dirEntry.name}`, storage);
-		} else {
-			storage.push(`${uri}/${dirEntry.name}`);
-		}
-	}));
+  await Promise.all(
+    files.map((dirEntry: Dirent) => {
+      if (dirEntry.isDirectory()) {
+        return addWorkspaceRootToWatch(`${uri}/${dirEntry.name}`, storage);
+      } else {
+        storage.push(`${uri}/${dirEntry.name}`);
+      }
+    })
+  );
 
-	return storage;
+  return storage;
 };
 
 const parseAllRootFolders = () => {
-	rootFolders.filter(folder => Boolean(folder)).forEach(async folderPath => {
-		const files = await addWorkspaceRootToWatch(folderPath);
+  rootFolders
+    .filter((folder) => Boolean(folder))
+    .forEach(async (folderPath) => {
+      const files = await addWorkspaceRootToWatch(folderPath);
 
-		const pogFiles = files.filter(path => path.endsWith('.pog'));
+      const pogFiles = files.filter((path) => path.endsWith(".pog"));
 
-		pogFiles
-			.filter(file => !docsToCompilerResults[`file://${file}`])
-			.forEach(async file => {
-				const textDocument = TextDocument.create(`file://${file}`, 'pog', 1, await (await fs.readFile(file)).toString());
+      pogFiles
+        .filter((file) => !docsToCompilerResults[`file://${file}`])
+        .forEach(async (file) => {
+          const textDocument = TextDocument.create(
+            `file://${file}`,
+            "pog",
+            1,
+            await (await fs.readFile(file)).toString()
+          );
 
-				parseDocument(textDocument);
-			});
-	});
+          parseDocument(textDocument);
+        });
+    });
 };
 
 connection.onInitialize((params: InitializeParams) => {
-	rootFolders = getRootFolderFromParams(params);
+  rootFolders = getRootFolderFromParams(params);
 
-	parseAllRootFolders();
+  parseAllRootFolders();
 
-	const capabilities = params.capabilities;
+  const capabilities = params.capabilities;
 
-	// Does the client support the `workspace/configuration` request?
-	// If not, we fall back using global settings.
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
-	);
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
-	);
+  // Does the client support the `workspace/configuration` request?
+  // If not, we fall back using global settings.
+  hasConfigurationCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.configuration
+  );
+  hasWorkspaceFolderCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.workspaceFolders
+  );
+  hasDiagnosticRelatedInformationCapability = !!(
+    capabilities.textDocument &&
+    capabilities.textDocument.publishDiagnostics &&
+    capabilities.textDocument.publishDiagnostics.relatedInformation
+  );
 
-	const result: InitializeResult = {
-		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			hoverProvider: true,
-			definitionProvider: true,
-			documentFormattingProvider: true,
-			// Tell the client that this server supports code completion.
-			completionProvider: {
-				resolveProvider: true,
-				triggerCharacters: [ '.' ]
-			}
-		}
-	};
-	if (hasWorkspaceFolderCapability) {
-		result.capabilities.workspace = {
-			workspaceFolders: {
-				supported: true
-			}
-		};
-	}
-	return result;
+  const result: InitializeResult = {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Incremental,
+      hoverProvider: true,
+      definitionProvider: true,
+      documentFormattingProvider: true,
+      documentSymbolProvider: true,
+      // Tell the client that this server supports code completion.
+      completionProvider: {
+        resolveProvider: true,
+        triggerCharacters: ["."],
+      },
+    },
+  };
+  if (hasWorkspaceFolderCapability) {
+    result.capabilities.workspace = {
+      workspaceFolders: {
+        supported: true,
+      },
+    };
+  }
+  return result;
 });
 
 connection.onInitialized(async (): Promise<InitializeResult> => {
-	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-		connection.client.register(DidChangeWatchedFilesNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders(_event => {
-			connection.console.log('Workspace folder change event received.');
-		});
-	}
+  if (hasConfigurationCapability) {
+    // Register for all configuration changes.
+    connection.client.register(
+      DidChangeConfigurationNotification.type,
+      undefined
+    );
+    connection.client.register(
+      DidChangeWatchedFilesNotification.type,
+      undefined
+    );
+  }
+  if (hasWorkspaceFolderCapability) {
+    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
+      connection.console.log("Workspace folder change event received.");
+    });
+  }
 
-	docsToCompilerResults = {};
+  docsToCompilerResults = {};
 
-	const settings = await connection.workspace.getConfiguration("pog");
+  const settings = await connection.workspace.getConfiguration("pog");
 
-	loadSysLibsFromGH(settings.libraries.sys, libManager);
-	loadExtLibs(settings.libraries.external as (string | ExtLibDef)[], libManager);
+  loadSysLibsFromGH(settings.libraries.sys, libManager);
+  loadExtLibs(
+    settings.libraries.external as (string | ExtLibDef)[],
+    libManager
+  );
 
-	return {
-		capabilities: {
-		}
-	};
+  return {
+    capabilities: {},
+  };
 });
 
 // Pog settings
 type ExtLibSetting = {
-	name: string
-	files: string[]
-}
+  name: string;
+  files: string[];
+};
 interface POGSettings {
-	libs: {
-		external: ExtLibSetting[],
-		system: string
-	}
+  libs: {
+    external: ExtLibSetting[];
+    system: string;
+  };
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
 const defaultSettings: POGSettings = {
-	libs: {
-		external: [],
-		system: '',
-	}
+  libs: {
+    external: [],
+    system: "",
+  },
 };
 
 let globalSettings: POGSettings = defaultSettings;
@@ -202,278 +234,294 @@ let globalSettings: POGSettings = defaultSettings;
 // Cache the settings of all open documents
 const documentSettings: Map<string, Thenable<POGSettings>> = new Map();
 
-connection.onDidChangeConfiguration(change => {
-	if (hasConfigurationCapability) {
-		// Reset all cached document settings
-		documentSettings.clear();
-	} else {
-		globalSettings = <POGSettings>(
-			(change.settings.languageServerExample || defaultSettings)
-		);
-	}
+connection.onDidChangeConfiguration((change) => {
+  if (hasConfigurationCapability) {
+    // Reset all cached document settings
+    documentSettings.clear();
+  } else {
+    globalSettings = <POGSettings>(
+      (change.settings.languageServerExample || defaultSettings)
+    );
+  }
 
-	// Revalidate all open text documents
-	documents.all().forEach(parseDocument);
+  // Revalidate all open text documents
+  documents.all().forEach(parseDocument);
 });
 
 function getDocumentSettings(resource: string): Thenable<POGSettings> {
-	if (!hasConfigurationCapability) {
-		return Promise.resolve(globalSettings);
-	}
-	let result = documentSettings.get(resource);
-	if (!result) {
-		result = connection.workspace.getConfiguration({
-			scopeUri: resource,
-			section: 'pog'
-		});
-		documentSettings.set(resource, result);
-	}
-	return result;
+  if (!hasConfigurationCapability) {
+    return Promise.resolve(globalSettings);
+  }
+  let result = documentSettings.get(resource);
+  if (!result) {
+    result = connection.workspace.getConfiguration({
+      scopeUri: resource,
+      section: "pog",
+    });
+    documentSettings.set(resource, result);
+  }
+  return result;
 }
 
 // Only keep settings for open documents
-documents.onDidClose(e => {
-	documentSettings.delete(e.document.uri);
+documents.onDidClose((e) => {
+  documentSettings.delete(e.document.uri);
 });
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-	parseAllRootFolders();
+documents.onDidChangeContent((change) => {
+  parseAllRootFolders();
 
-	parseDocument(change.document);
+  parseDocument(change.document);
 });
 
 function isCompilerError(error: any): error is CompilerError {
-	return "type" in error;
+  return "type" in error;
 }
 
 function fileLocToDiagPosition(loc: FileLoc): Position {
-	return {
-		line: loc.line,
-		character: loc.col > 0 ? loc.col - 1 : loc.col
-	};
+  return {
+    line: loc.line,
+    character: loc.col > 0 ? loc.col - 1 : loc.col,
+  };
 }
 
 async function populateLibraryManager(compiler: ProtoCompiler) {
-	if (!compiler.root) {
-		return;
-	}
+  if (!compiler.root) {
+    return;
+  }
 
-	const split = compiler.sourceUri.split('/');
-	let hasLib = false;
+  const split = compiler.sourceUri.split("/");
+  let hasLib = false;
 
-	try {
-		const stat = await fs.stat(osPath.join(compiler.sourceUri.replace('file:/', ''), '..', 'lib.pog'));
-		if (stat.isFile()) {
-			hasLib = true;
-		}
-	} catch {
-		return;
-	}
+  try {
+    const stat = await fs.stat(
+      osPath.join(compiler.sourceUri.replace("file:/", ""), "..", "lib.pog")
+    );
+    if (stat.isFile()) {
+      hasLib = true;
+    }
+  } catch {
+    return;
+  }
 
-	let libName: string | undefined = undefined;
-	let libVersion = '';
-	let libDoc = '';
-	const deps: string[] = [];
+  let libName: string | undefined = undefined;
+  let libVersion = "";
+  let libDoc = "";
+  const deps: string[] = [];
 
-	if (hasLib) {
-		libName = split[split.length - 2];
-	}
+  if (hasLib) {
+    libName = split[split.length - 2];
+  }
 
-	const isLibMeta = compiler.sourceUri.endsWith('lib.pog');
+  const isLibMeta = compiler.sourceUri.endsWith("lib.pog");
 
-	if (isLibMeta) {
-		const pragma = compiler.root?.children['pragma'];
+  if (isLibMeta) {
+    const pragma = compiler.root?.children["pragma"];
 
-		libName = split[split.length - 2];
-		libVersion = pragma?.children._version.type;
-		libDoc = pragma?.doc || '';
+    libName = split[split.length - 2];
+    libVersion = pragma?.children._version.type;
+    libDoc = pragma?.doc || "";
 
-		const protoDeps = pragma?.children._depends?.children;
+    const protoDeps = pragma?.children._depends?.children;
 
-		protoDeps && Object.keys(protoDeps).forEach(key => {
-			deps.push(protoDeps[key].children.lib.type);
-		});
-	}
+    protoDeps &&
+      Object.keys(protoDeps).forEach((key) => {
+        deps.push(protoDeps[key].children.lib.type);
+      });
+  }
 
-	if (!libName) {
-		return;
-	}
+  if (!libName) {
+    return;
+  }
 
-	if (!libManager.getLib(libName)) {
-		libManager.addLib(new PogLib(libName, libVersion, compiler.sourceUri, libDoc));
-	}
+  if (!libManager.getLib(libName)) {
+    libManager.addLib(
+      new PogLib(libName, libVersion, compiler.sourceUri, libDoc)
+    );
+  }
 
-	const pogLib = libManager.getLib(libName);
+  const pogLib = libManager.getLib(libName);
 
-	if (!pogLib) {
-		return;
-	}
+  if (!pogLib) {
+    return;
+  }
 
-	compilersToLibs.set(compiler, pogLib);
+  compilersToLibs.set(compiler, pogLib);
 
-	if (libVersion) {
-		pogLib.addMeta(libVersion, libDoc, deps);
-	}
+  if (libVersion) {
+    pogLib.addMeta(libVersion, libDoc, deps);
+  }
 
-	if (!isLibMeta) {
-		Object.entries(compiler.root.children).forEach(([name, proto]) => {
-			pogLib.addChild(name, proto);
-		});
-	}
+  if (!isLibMeta) {
+    Object.entries(compiler.root.children).forEach(([name, proto]) => {
+      pogLib.addChild(name, proto);
+    });
+  }
 }
 
 async function parseDocument(textDocument: TextDocument): Promise<void> {
-	const diagnostics: Diagnostic[] = [];
-	const compiler = new ProtoCompiler(textDocument.uri);
-	const text = textDocument.getText();
+  const diagnostics: Diagnostic[] = [];
+  const compiler = new ProtoCompiler(textDocument.uri);
+  const text = textDocument.getText();
 
-	// if no compiler is saved then save one
-	if (!docsToCompilerResults[textDocument.uri]) {
-		docsToCompilerResults[textDocument.uri] = compiler;
-	} else {
-		// if a compiler is already present
-		// only add a compiler if no errors are availabe
-		// TO DO - remove this logic and always add the current compiler when we have a resilient compiler
-		if (compiler.errs.length === 0) {
-			docsToCompilerResults[textDocument.uri] = compiler;
-		}
-	}
+  // if no compiler is saved then save one
+  if (!docsToCompilerResults[textDocument.uri]) {
+    docsToCompilerResults[textDocument.uri] = compiler;
+  } else {
+    // if a compiler is already present
+    // only add a compiler if no errors are availabe
+    // TO DO - remove this logic and always add the current compiler when we have a resilient compiler
+    if (compiler.errs.length === 0) {
+      docsToCompilerResults[textDocument.uri] = compiler;
+    }
+  }
 
-	try {
-		compiler.run(text + '\0');
-		compiler.errs
-			.forEach(err => {
-				const diagnostic: Diagnostic = {
-					severity: DiagnosticSeverity.Error,
-					range: {
-						start: fileLocToDiagPosition(err.loc),
-						end: fileLocToDiagPosition(err.endLoc)
-					},
-					message: err.message,
-					//source: 'ex'
-				};
-	
-				diagnostics.push(diagnostic);
-			});
-	} catch (e: unknown) {
-		if (isCompilerError(e)) {
-			const diagnostic: Diagnostic = {
-				severity: DiagnosticSeverity.Error,
-				range: {
-					start: textDocument.positionAt(e.loc.charIndex),
-					end: textDocument.positionAt(text.length)
-				},
-				message: e.message,
-				//source: 'ex'
-			};
+  try {
+    compiler.run(text + "\0");
+    compiler.errs.forEach((err) => {
+      const diagnostic: Diagnostic = {
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: fileLocToDiagPosition(err.loc),
+          end: fileLocToDiagPosition(err.endLoc),
+        },
+        message: err.message,
+        //source: 'ex'
+      };
 
-			diagnostics.push(diagnostic);
-		}
-	} finally {
-		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-		// time to add it to the library manager
-		populateLibraryManager(compiler);
+      diagnostics.push(diagnostic);
+    });
+  } catch (e: unknown) {
+    if (isCompilerError(e)) {
+      const diagnostic: Diagnostic = {
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: textDocument.positionAt(e.loc.charIndex),
+          end: textDocument.positionAt(text.length),
+        },
+        message: e.message,
+        //source: 'ex'
+      };
 
-		// resolve refs
-		compiler.root?.resolveRefTypes(compiler.root, libManager);
-	}
-	return;
+      diagnostics.push(diagnostic);
+    }
+  } finally {
+    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+    // time to add it to the library manager
+    populateLibraryManager(compiler);
+
+    // resolve refs
+    compiler.root?.resolveRefTypes(compiler.root, libManager);
+  }
+  return;
 }
 
-connection.onDidChangeWatchedFiles(_change => {
-	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
+connection.onDidChangeWatchedFiles((_change) => {
+  // Monitored files have change in VSCode
+  connection.console.log("We received an file change event");
 });
 
 const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
 function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
-	let position = doc.offsetAt(pos) - 1;
-	const text = doc.getText();
+  let position = doc.offsetAt(pos) - 1;
+  const text = doc.getText();
 
-	// this is naive, but we go backwards until we reach a :
-	let identifier = "";
+  // this is naive, but we go backwards until we reach a :
+  let identifier = "";
 
-	while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
-		identifier = text.charAt(position) + identifier;
-		position --;
-	}
+  while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
+    identifier = text.charAt(position) + identifier;
+    position--;
+  }
 
-	if (position === -1) {
-		return '';
-	}
+  if (position === -1) {
+    return "";
+  }
 
-	identifier = identifier.trim().replace(/[\n\t]/g, '');
+  identifier = identifier.trim().replace(/[\n\t]/g, "");
 
-	return identifier;
+  return identifier;
 }
 
-function getLargestIdentifierForPosition(doc: TextDocument, pos: Position): string[] {
-	let position = doc.offsetAt(pos);
-	const text = doc.getText();
+function getLargestIdentifierForPosition(
+  doc: TextDocument,
+  pos: Position
+): string[] {
+  let position = doc.offsetAt(pos);
+  const text = doc.getText();
 
-	// this is naive, but we go backwards until we reach a :
-	let identifier = "";
+  // this is naive, but we go backwards until we reach a :
+  let identifier = "";
 
-	while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
-		identifier = text.charAt(position) + identifier;
-		position --;
-	}
+  while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
+    identifier = text.charAt(position) + identifier;
+    position--;
+  }
 
-	identifier = identifier.trim().replace(/[\n\t]/g, '');
+  identifier = identifier.trim().replace(/[\n\t]/g, "");
 
-	position = doc.offsetAt(pos) + 1;
-	while(position < text.length && text.charAt(position).match(identifierSegmentCharRegexp)) {
-		identifier += text.charAt(position);
-		position ++;
-	}
+  position = doc.offsetAt(pos) + 1;
+  while (
+    position < text.length &&
+    text.charAt(position).match(identifierSegmentCharRegexp)
+  ) {
+    identifier += text.charAt(position);
+    position++;
+  }
 
-	identifier = identifier.trim().replace(/[\n\t]/g, '');
+  identifier = identifier.trim().replace(/[\n\t]/g, "");
 
-	return identifier.split('.');
+  return identifier.split(".");
 }
 
 function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
-	// let try to find the identifier for this position
-	const compiledDocument = docsToCompilerResults[params.textDocument.uri];
-	const doc = documents.get(params.textDocument.uri);
+  // let try to find the identifier for this position
+  const compiledDocument = docsToCompilerResults[params.textDocument.uri];
+  const doc = documents.get(params.textDocument.uri);
 
-	if (!compiledDocument || !doc) {
-		return [];
-	}
+  if (!compiledDocument || !doc) {
+    return [];
+  }
 
-	const partialIdentifier = getIdentifierForPosition(doc, params.position);
+  const partialIdentifier = getIdentifierForPosition(doc, params.position);
 
-	if (!partialIdentifier) {
-		return [];
-	}
+  if (!partialIdentifier) {
+    return [];
+  }
 
-	let options = compiledDocument.root && findChildrenOf(partialIdentifier, compiledDocument.root) || [];
+  let options =
+    (compiledDocument.root &&
+      findChildrenOf(partialIdentifier, compiledDocument.root)) ||
+    [];
 
-	//	maybe the identifier is from a lib
-	if (options.length === 0) {
-		const libName = partialIdentifier.split('.')[0];
-		const lib = libManager.getLib(libName);
-		
-		if (!lib) {
-			return [];
-		}
+  //	maybe the identifier is from a lib
+  if (options.length === 0) {
+    const libName = partialIdentifier.split(".")[0];
+    const lib = libManager.getLib(libName);
 
-		//	get compilers for files that have this lib
-		const identifierWithoutLib = partialIdentifier.split('.').slice(1).join('.');
+    if (!lib) {
+      return [];
+    }
 
-		options = findChildrenOf(identifierWithoutLib, lib.rootProto);
-	}
+    //	get compilers for files that have this lib
+    const identifierWithoutLib = partialIdentifier
+      .split(".")
+      .slice(1)
+      .join(".");
 
-	return options.map(op => ({
-		label: op.label,
-		kind: CompletionItemKind.Field,
-		detail: op.parent,
-		documentation: op.doc
-	}));
+    options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+  }
+
+  return options.map((op) => ({
+    label: op.label,
+    kind: CompletionItemKind.Field,
+    detail: op.parent,
+    documentation: op.doc,
+  }));
 }
 
 // This handler provides the initial list of the completion items.
@@ -481,130 +529,184 @@ connection.onCompletion(handleAutoCompletion);
 
 // This handler resolves additional information for the item selected in
 // the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		return item;
-	}
-);
+connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
+  return item;
+});
 
 function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
-	// let try to find the identifier for this position
-	const compiledDocument = docsToCompilerResults[uri];
-	const doc = documents.get(uri);
+  // let try to find the identifier for this position
+  const compiledDocument = docsToCompilerResults[uri];
+  const doc = documents.get(uri);
 
-	if (!compiledDocument || !doc) {
-		return null;
-	}
+  if (!compiledDocument || !doc) {
+    return null;
+  }
 
-	const identifier = getLargestIdentifierForPosition(doc, pos);
+  const identifier = getLargestIdentifierForPosition(doc, pos);
 
-	if (!identifier) {
-		return null;
-	}
+  if (!identifier) {
+    return null;
+  }
 
-	const proto = compiledDocument.root && findProtoByQname(identifier.join('.'), compiledDocument.root);
+  const proto =
+    compiledDocument.root &&
+    findProtoByQname(identifier.join("."), compiledDocument.root);
 
-	if (proto) {
-		return proto;
-	} else {
-		// 	search in the files lib first
-		const lib = compilersToLibs.get(compiledDocument);
+  if (proto) {
+    return proto;
+  } else {
+    // 	search in the files lib first
+    const lib = compilersToLibs.get(compiledDocument);
 
-		if (lib) {
-			const proto = findProtoByQname(identifier.join('.'), lib.rootProto);
+    if (lib) {
+      const proto = findProtoByQname(identifier.join("."), lib.rootProto);
 
-			if (proto) {
-				return proto;
-			}
-		}
+      if (proto) {
+        return proto;
+      }
+    }
 
-		const proto = libManager.findProtoByQName(identifier.join('.'), lib?.deps);
-		
-		return proto;
-	}
+    const proto = libManager.findProtoByQName(identifier.join("."), lib?.deps);
+
+    return proto;
+  }
 }
 
 function handleHover(params: HoverParams): Hover | null {
-	const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
+  const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
 
-	if (!proto) {
-		return null;
-	}
+  if (!proto) {
+    return null;
+  }
 
-	return {
-		contents: proto.doc || ''
-	};
+  return {
+    contents: proto.doc || "",
+  };
 }
 
 connection.onHover(handleHover);
 
 function handleDefinition(params: DefinitionParams): Definition | null {
-	const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
-	
-	if (!proto) {
-		return null;
-	}
+  const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
 
-	return {
-		uri: proto.loc.file,
-		range: {
-			start: {
-				line: proto.loc.line,
-				character: proto.loc.col,
-			},
-			end: {
-				line: proto.loc.line,
-				character: proto.loc.col + 1,
-			}
-		}
-	};
+  if (!proto) {
+    return null;
+  }
+
+  return {
+    uri: proto.loc.file,
+    range: {
+      start: {
+        line: proto.loc.line,
+        character: proto.loc.col,
+      },
+      end: {
+        line: proto.loc.line,
+        character: proto.loc.col + 1,
+      },
+    },
+  };
 }
 
 connection.onDefinition(handleDefinition);
 
-function handleSemanticTokens (params: SemanticTokensParams): SemanticTokens {
-	const uri = params.textDocument.uri;
+function handleSemanticTokens(params: SemanticTokensParams): SemanticTokens {
+  const uri = params.textDocument.uri;
 
-	const compiler = docsToCompilerResults[uri];
+  const compiler = docsToCompilerResults[uri];
 
-	if (!compiler || !compiler.root) {
-		return {
-			data:[]
-		};
-	}
+  if (!compiler || !compiler.root) {
+    return {
+      data: [],
+    };
+  }
 
-	const semanticProtos = extractSemanticProtos(compiler.root, libManager);
-	const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
+  const semanticProtos = extractSemanticProtos(compiler.root, libManager);
+  const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
 
-	return {
-		data: semanticTokens,
-	};
+  return {
+    data: semanticTokens,
+  };
 }
 
 connection.languages.semanticTokens.on(handleSemanticTokens);
 
-function onDocumentFormatting (params: DocumentFormattingParams): TextEdit[] {
-	const uri = params.textDocument.uri;
+function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
+  const uri = params.textDocument.uri;
 
-	const compiler = docsToCompilerResults[uri];
+  const ret: DocumentSymbol[] = [];
 
-	if (!compiler) {
-		return [];
-	}
+  if (!uri) {
+    return [];
+  }
+  const compiler = docsToCompilerResults[uri];
 
-	const tokenBag = compiler.tokenBag;
+  if (!compiler) {
+    return [];
+  }
 
-	if (!tokenBag || !tokenBag.length) {
-		return [];
-	}
+  const symbols = compiler.root?.children;
 
-	const doc = documents.get(uri);
+  if (!symbols) {
+    return [];
+  }
 
-	if (!doc) {
-		return [];
-	}
+  Object.keys(symbols).forEach((symbolName) => {
+    const loc = symbols[symbolName].loc;
 
-	return formatFile(doc, tokenBag, params.options);
+    ret.push({
+      name: symbolName,
+      kind: SymbolKind.Interface,
+      range: {
+        start: {
+          line: loc.line,
+          character: loc.col,
+        },
+        end: {
+          line: loc.line,
+          character: loc.col + 1,
+        },
+      },
+      selectionRange: {
+        start: {
+          line: loc.line,
+          character: loc.col,
+        },
+        end: {
+          line: loc.line,
+          character: loc.col + 1,
+        },
+      },
+    });
+  });
+
+  return ret;
+}
+
+connection.onDocumentSymbol(onDocumentSymbols);
+
+function onDocumentFormatting(params: DocumentFormattingParams): TextEdit[] {
+  const uri = params.textDocument.uri;
+
+  const compiler = docsToCompilerResults[uri];
+
+  if (!compiler) {
+    return [];
+  }
+
+  const tokenBag = compiler.tokenBag;
+
+  if (!tokenBag || !tokenBag.length) {
+    return [];
+  }
+
+  const doc = documents.get(uri);
+
+  if (!doc) {
+    return [];
+  }
+
+  return formatFile(doc, tokenBag, params.options);
 }
 
 connection.onDocumentFormatting(onDocumentFormatting);
