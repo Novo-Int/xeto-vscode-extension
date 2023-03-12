@@ -34,7 +34,7 @@ import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
 import { Dirent } from "fs";
 import { Proto } from "./compiler/Proto";
-import { findChildrenOf, findProtoByQname, findRefsToProto } from "./FindProto";
+import { findChildrenOf, findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
   PogLib,
@@ -46,6 +46,7 @@ import {
   extractSemanticProtos,
   convertProtosToSemanticTokens,
 } from "./semantic-tokens";
+import { renameInDoc } from "./refactor";
 import {
   DocumentSymbol,
   DocumentSymbolParams,
@@ -711,42 +712,19 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     changes: Record<string, TextEdit[]>;
   };
 
-  //  we have a proto, we need to find all references to it
-  //  first we'll look into the current doc
-  const refs =
-    (compiler.root && findRefsToProto(proto.name, compiler.root)) || [];
-
   workspaceEdit.changes[uri] = [
     {
       range: {
         start: {
-			character: params.position.character - proto.name.length,
-			line: params.position.line
-		},
+          character: params.position.character - proto.name.length,
+          line: params.position.line,
+        },
         end: params.position,
       },
       newText: params.newName,
     },
+    ...renameInDoc(params, proto, doc, compiler),
   ];
-
-  if (refs) {
-    const text = doc.getText();
-
-    //	add the TextEdits
-    for (const ref of refs) {
-      const startOfReplace = text.indexOf(proto.name, ref.loc.charIndex);
-
-      const edit = {
-        range: {
-          start: doc.positionAt(startOfReplace),
-          end: doc.positionAt(startOfReplace + proto.name.length),
-        },
-        newText: params.newName,
-      };
-
-      workspaceEdit.changes[uri].push(edit);
-    }
-  }
 
   return workspaceEdit;
 }
