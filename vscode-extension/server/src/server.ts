@@ -54,6 +54,7 @@ import {
   TextEdit,
 } from "vscode-languageserver";
 import { formatFile } from "./formatting";
+import { generateSymbols } from './symbols';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -634,8 +635,6 @@ connection.languages.semanticTokens.on(handleSemanticTokens);
 function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
   const uri = params.textDocument.uri;
 
-  const ret: DocumentSymbol[] = [];
-
   if (!uri) {
     return [];
   }
@@ -645,42 +644,13 @@ function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
     return [];
   }
 
-  const symbols = compiler.root?.children;
+  const root = compiler.root;
 
-  if (!symbols) {
+  if (!root) {
     return [];
   }
 
-  Object.keys(symbols).forEach((symbolName) => {
-    const loc = symbols[symbolName].loc;
-
-    ret.push({
-      name: symbolName,
-      kind: SymbolKind.Interface,
-      range: {
-        start: {
-          line: loc.line,
-          character: loc.col,
-        },
-        end: {
-          line: loc.line,
-          character: loc.col + 1,
-        },
-      },
-      selectionRange: {
-        start: {
-          line: loc.line,
-          character: loc.col,
-        },
-        end: {
-          line: loc.line,
-          character: loc.col + 1,
-        },
-      },
-    });
-  });
-
-  return ret;
+  return generateSymbols(root);
 }
 
 connection.onDocumentSymbol(onDocumentSymbols);
