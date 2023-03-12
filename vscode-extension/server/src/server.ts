@@ -726,6 +726,26 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     ...renameInDoc(params, proto, doc, compiler),
   ];
 
+  //  refactor in entire workspace
+  Object.keys(docsToCompilerResults).forEach(docUri => {
+	//	skip current doc
+	if (docUri === uri) {
+		return;
+	}
+
+	const doc = documents.get(docUri);
+
+	if (!doc) {
+		return;
+	}
+
+	const edits = renameInDoc(params, proto, doc, docsToCompilerResults[docUri]);
+
+	if (edits.length) {
+		workspaceEdit.changes[docUri] = edits;
+	}
+  });
+
   return workspaceEdit;
 }
 
