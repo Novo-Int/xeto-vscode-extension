@@ -19,7 +19,10 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.name === "Bool" ||
     p.refType?.name === "Bool" ||
     p.type === "Bool" ||
-    p.type === "sys.Bool"
+    p.type === "sys.Bool" ||
+    (p.type === "sys.Maybe" &&
+      p.children["_of"] &&
+      p.children["_of"].type === "Bool")
   ) {
     return SymbolKind.Boolean;
   }
@@ -28,7 +31,10 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.name === "Str" ||
     p.refType?.name === "Str" ||
     p.type === "Str" ||
-    p.type === "sys.Str"
+    p.type === "sys.Str" ||
+    (p.type === "sys.Maybe" &&
+      p.children["_of"] &&
+      p.children["_of"].type === "Str")
   ) {
     return SymbolKind.String;
   }
@@ -37,7 +43,10 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.name === "Number" ||
     p.refType?.name === "Number" ||
     p.type === "Number" ||
-    p.type === "sys.Number"
+    p.type === "sys.Number" ||
+    (p.type === "sys.Maybe" &&
+      p.children["_of"] &&
+      p.children["_of"].type === "Number")
   ) {
     return SymbolKind.Number;
   }
