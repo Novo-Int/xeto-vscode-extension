@@ -80,7 +80,7 @@ const extractPosFromProto = (proto: Proto): Pos => {
 
 const convertProtosToSemanticTokens = (protos: Proto[]): number[] => {
 	//	sort them based on the position on the doc
-	const sortedProtos = protos.sort((a, b) => a.loc.charIndex - b.loc.charIndex);
+	const sortedProtos = protos.filter(p => p.loc).sort((a, b) => a.loc.charIndex - b.loc.charIndex);
 
 	if (sortedProtos.length === 0) {
 		return [];
