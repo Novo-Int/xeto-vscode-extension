@@ -480,6 +480,11 @@ function getLargestIdentifierForPosition(
   // this is naive, but we go backwards until we reach a :
   let identifier = "";
 
+  //  eat up \n
+  while (position >= -1 && text.charAt(position) === '\n') {
+    position--;
+  }
+
   while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
     identifier = text.charAt(position) + identifier;
     position--;
