@@ -159,6 +159,23 @@ export class Parser {
 
     this.parseProtoChildren(proto, Token.LT, Token.GT, true);
 
+    if (this.cur === Token.QUESTION) {
+      this.consume(Token.QUESTION);
+
+      if (proto.traits['_of']) {
+        const oldTraits = {
+          _of: proto.traits['_of'],
+          _is: proto.traits['_is']
+        };
+
+        proto.traits['_is'] = 'sys.Maybe';
+        proto.traits['_of'] = oldTraits;
+      } else {
+        proto.traits['_of'] = proto.traits['_is'];
+        proto.traits['_is'] = 'sys.Maybe';
+      }
+    }
+
     return true;
   }
 
