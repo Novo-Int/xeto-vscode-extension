@@ -331,6 +331,10 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
     protoDeps &&
       Object.keys(protoDeps).forEach((key) => {
+        if (key.startsWith('#')) {
+          return;
+        }
+
         deps.push(protoDeps[key].children.lib.type);
       });
   }

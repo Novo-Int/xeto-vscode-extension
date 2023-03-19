@@ -21,7 +21,11 @@ const isMarker = (root: Proto, proto: Proto, libManager?: LibraryManager): boole
 		return false;
 	}
 
-	if (proto.type === 'Marker' || proto.type === 'sys.Marker') {
+	if (proto.children['#isMeta']) {
+		return false;
+	}
+
+	if (proto.type === 'Marker' || proto.type === 'sys.Marker' || proto.refType?.type === 'Marker' || proto.refType?.type === 'sys.Marker') {
 		return true;
 	}
 

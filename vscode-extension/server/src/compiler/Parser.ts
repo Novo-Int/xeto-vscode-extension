@@ -318,6 +318,10 @@ export class Parser {
         if (name === "is") this.err("Proto name 'is' is reserved", child.loc);
         if (name === "val") this.err("Proto name 'val' is reserved", child.loc);
         name = "_" + name;
+        //  this may seem like a hack, because it is,
+        //  but there is no change of collision with user provided names
+        child.traits['#isMeta'] = {
+        };
       }
       if (parent.traits[name]) {
         this.generateDuplicateDefErr(parent, child);
