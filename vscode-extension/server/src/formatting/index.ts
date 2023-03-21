@@ -9,7 +9,7 @@ const generateWhiteSpaces = (
   options: FormattingOptions,
   depth: number
 ): string => {
-  return new Array(depth * options.tabSize)
+  return new Array(options.insertSpaces ? depth * options.tabSize: depth)
     .fill(options.insertSpaces ? " " : "\t")
     .join("");
 };
