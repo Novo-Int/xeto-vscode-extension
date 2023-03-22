@@ -24,6 +24,10 @@ export const renameInDoc = (
 
     //	add the TextEdits
     for (const ref of refs) {
+      if (!ref.loc) {
+        continue;
+      }
+
       const startOfReplace = text.indexOf(oldQName, ref.loc.charIndex);
 
       const edit = {
