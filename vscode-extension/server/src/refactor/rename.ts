@@ -42,5 +42,19 @@ export const renameInDoc = (
     }
   }
 
-  return edits;
+  //  consolidate overlapping ranges
+  return edits.reduce((acc, current) => {
+    if (
+      acc.find(
+        (c) =>
+          c.range.start.character === current.range.start.character &&
+          c.range.start.line === current.range.start.line
+      )
+    ) {
+      return acc;
+    }
+
+    acc.push(current);
+    return acc;
+  }, [] as TextEdit[]);
 };
