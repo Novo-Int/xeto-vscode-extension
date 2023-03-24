@@ -15,6 +15,7 @@ export class Tokenizer {
   private peekCol = 0;
   private curLine = 1;
   private curCol = 0;
+  private curCharIndex = 0;
 
   public col = 1;
   public line = 1;
@@ -105,7 +106,7 @@ export class Tokenizer {
   private lockLoc() {
     this.col = this.curCol;
     this.line = this.curLine;
-    this.charIndex = this.currentIndexInInput;
+    this.charIndex = this.curCharIndex;
   }
 
   // Token Productions
@@ -352,6 +353,7 @@ export class Tokenizer {
     this.cur = this.peek;
     this.curLine = this.peekLine;
     this.curCol = this.peekCol;
+    this.curCharIndex = this.currentIndexInInput;
 
     this.peek = this.input.charAt(this.currentIndexInInput);
 

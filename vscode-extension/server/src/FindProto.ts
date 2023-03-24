@@ -77,6 +77,13 @@ export const findRefsToProto = (qname: string, root: Proto): Proto[] => {
       ret.push(proto);
     }
 
+	if (proto.children['_of']) {
+		if(proto.children['_of'].type?.startsWith(qname)) {
+			console.log(proto.children['_of']);
+			ret.push(proto.children['_of']);
+		}
+	}
+
     if (Object.keys(proto.children).length) {
       ret.push(...findRefsToProto(qname, proto));
     }

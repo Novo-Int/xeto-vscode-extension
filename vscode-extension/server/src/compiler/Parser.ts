@@ -27,24 +27,33 @@ export type TokenWithPosition = {
   col: number
 }
 
+type ProtoOf = {
+  children: unknown[],
+}
+
 export class Parser {
   private fileLoc: FileLoc;
   private logErrCB: CompilerLogFunction;
   private tokenizer: Tokenizer;
 
+  private prevLoc: FileLoc;
+
   private cur: Token; // current token
   private curVal: any; // current token value
   private curLine = 0; // current token line number
   private curCol = 0; // current token col number
+  private curCharIndex = 0; // current char index in the stream
 
   private peek: Token; // next token
   private peekVal: any; // next token value
   private peekLine = 0; // next token line number
   private peekCol = 0; // next token col number
+  private peekCharIndex = 0; // next char index in the stream
 
   private _tokenBag: TokenWithPosition[] = [];
 
   public constructor(input: string, logErrCB: CompilerLogFunction, loc = "input") {
+    this.prevLoc = new FileLoc(loc);
     this.fileLoc = new FileLoc(loc);
     this.logErrCB = logErrCB;
 
@@ -216,13 +225,17 @@ export class Parser {
   }
 
   private parseIsAnd(p: ParsedProto, qname: string): boolean{
-    const of = {};
-    this.addToOf(of, qname, undefined);
+    const of = {
+      children: []
+    };
+
+    this.addToOf(of, qname, undefined, this.prevLoc);
 
     while (this.cur === Token.AMP) {
       this.consume();
       this.skipNewlines();
-      this.addToOf(of, this.parseIsSimple("Expecting next proto name after '&' and symbol"));
+      const qname = this.parseIsSimple("Expecting next proto name after '&' and symbol");
+      this.addToOf(of, qname, undefined, this.prevLoc);
     }
 
     p.traits["_is"] = "sys.And";
@@ -232,18 +245,21 @@ export class Parser {
   }
 
   private parseIsOr(p: ParsedProto, qname: string | undefined = undefined, val: string | undefined = undefined): boolean {
-    const of = {};
+    const of = {
+      children: []
+    };
 
-    this.addToOf(of, qname, val);
+    this.addToOf(of, qname, val, this.prevLoc);
 
     while (this.cur === Token.PIPE) {
       this.consume();
       this.skipNewlines();
 
       if (this.cur.isVal) {
-        this.addToOf(of, undefined, this.consumeVal());
+        this.addToOf(of, undefined, this.consumeVal(), this.prevLoc);
       } else {
-        this.addToOf(of, this.parseIsSimple("Expecting next proto name after '|' or symbol"));
+        const qname = this.parseIsSimple("Expecting next proto name after '|' or symbol");
+        this.addToOf(of, qname, undefined, this.prevLoc);
       }
     }
 
@@ -268,15 +284,24 @@ export class Parser {
     return this.consumeQName();
   }
 
-  private addToOf(of: Record<string, unknown>, qname: string | undefined = undefined, val: string | undefined = undefined) {
-    of["_" + Object.keys(of).length] = {};
+  private addToOf(of: ProtoOf, qname: string | undefined = undefined, val: string | undefined = undefined, loc: FileLoc | undefined = undefined) {
+    const child: Record<string, any> = {};
+
+    of.children.push(child);
 
     if (qname) {
-      of["_is"] = qname;
+      child["_is"] = qname;
     }
 
     if (val) {
-      of["_val"] = val;
+      child["_val"] = val;
+    }
+
+    if (loc) {
+      child["_loc"] = {
+        "_is": "sys.Str",
+        "_val": loc
+      };
     }
   }
 
@@ -477,15 +502,18 @@ export class Parser {
   private consume(expected: Token | undefined = undefined) {
     if (expected !== undefined) this.verify(expected);
 
+    this.prevLoc = new FileLoc(this.fileLoc.file, this.curLine, this.curCol, this.curCharIndex);
+
     this.cur = this.peek;
     this.curVal = this.peekVal;
     this.curLine = this.peekLine;
     this.curCol = this.peekCol;
+    this.curCharIndex = this.peekCharIndex;
 
     this._tokenBag.push({
       token: this.peek,
       val: this.tokenizer.val,
-      indexInInput: this.tokenizer.charIndex,
+      indexInInput: this.curCharIndex,
       col: this.curCol,
       line: this.curLine,
     });
@@ -495,6 +523,7 @@ export class Parser {
       this.peekVal = this.tokenizer.val;
       this.peekLine = this.tokenizer.line;
       this.peekCol = this.tokenizer.col;
+      this.peekCharIndex = this.tokenizer.charIndex;
 
       if (this.tokenizer.currentError) {
         this.logErrCB(this.tokenizer.currentError);
