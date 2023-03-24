@@ -331,7 +331,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
     protoDeps &&
       Object.keys(protoDeps).forEach((key) => {
-        if (key.startsWith('#')) {
+        if (key.startsWith("#")) {
           return;
         }
 
@@ -481,7 +481,7 @@ function getLargestIdentifierForPosition(
   let identifier = "";
 
   //  eat up \n
-  while (position >= -1 && text.charAt(position) === '\n') {
+  while (position >= -1 && text.charAt(position) === "\n") {
     position--;
   }
 
@@ -719,12 +719,18 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
   }
 
   //  we need this because the selection for renaming may be in the middle of the identifier
-  const startCharacter = params.position.character - getIdentifierLength(doc, params.position) + 1;
+  const startCharacter =
+    params.position.character - getIdentifierLength(doc, params.position) + 1;
 
   const protoName = compiler.getQNameByLocation({
     line: params.position.line,
     character: startCharacter,
   });
+
+  //  trying to rename a symbol that's not defined in this compilation unit
+  if (protoName === "") {
+    return null;
+  }
 
   const proto =
     (compiler.root && findProtoByQname(protoName, compiler.root)) || null;
@@ -754,7 +760,7 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
         end: {
           character: startCharacter - 1 + proto.name.length,
           line: params.position.line,
-        }
+        },
       },
       newText: params.newName,
     },
@@ -769,7 +775,10 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     }
 
     //  we also want to skip if files are in different libs
-    if (compilersToLibs.get(docsToCompilerResults[docUri]) !== compilersToLibs.get(compiler) ) {
+    if (
+      compilersToLibs.get(docsToCompilerResults[docUri]) !==
+      compilersToLibs.get(compiler)
+    ) {
       return;
     }
 
