@@ -67,7 +67,7 @@ export class Proto {
 		const proto = new Proto(originalName, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
 
 		Object.keys(ast)
-			.filter(key => !metaPropsNotToParse[key])
+			.filter(key => !metaPropsNotToParse[key] && typeof ast[key] !== 'string')
 			.forEach(key => {
 				const childProto = Proto.fromPartialAST(key, ast[key]);
 				proto.children[key] = childProto;
