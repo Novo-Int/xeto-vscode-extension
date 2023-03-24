@@ -763,6 +763,11 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
       return;
     }
 
+    //  we also want to skip if files are in different libs
+    if (compilersToLibs.get(docsToCompilerResults[docUri]) !== compilersToLibs.get(compiler) ) {
+      return;
+    }
+
     const doc = documents.get(docUri);
 
     if (!doc) {
