@@ -718,10 +718,12 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     return null;
   }
 
+  //  we need this because the selection for renaming may be in the middle of the identifier
+  const startCharacter = params.position.character - getIdentifierLength(doc, params.position) + 1;
+
   const protoName = compiler.getQNameByLocation({
     line: params.position.line,
-    character:
-      params.position.character - getIdentifierLength(doc, params.position) + 1,
+    character: startCharacter,
   });
 
   const proto =
@@ -746,10 +748,13 @@ function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     {
       range: {
         start: {
-          character: params.position.character - proto.name.length,
+          character: startCharacter - 1,
           line: params.position.line,
         },
-        end: params.position,
+        end: {
+          character: startCharacter - 1 + proto.name.length,
+          line: params.position.line,
+        }
       },
       newText: params.newName,
     },
