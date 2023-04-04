@@ -1,5 +1,5 @@
 {
-	"scopeName": "source.pog",
+	"scopeName": "source.xeto",
 	"patterns": [
 		{ "include": "#file" }
 	],
@@ -23,7 +23,7 @@
 		]
 	  },
 	  "protoData": {
-		"name": "pog.proto.data",
+		"name": "xeto.proto.data",
 		"begin": "{",
 		"end": "}",
 		"beginCaptures": {
@@ -37,17 +37,17 @@
 		]
 	  },
 	  "protos": {
-		"name": "pog.protos.",
+		"name": "xeto.protos.",
 		"patterns": [
 			{ "include": "#proto" },
 			{ "match": ",", "name": "constant.character"}
 		]
 	  },
 	  "protoUnion": {
-		"name": "pog.proto.union",
+		"name": "xeto.proto.union",
 		"patterns": [
 			{ "match": "\\|",
-				"name": "pog.proto.operator.union",
+				"name": "xeto.proto.operator.union",
 				"captures": {
 					"0": { "name": "keyword.control" }
 				}
@@ -56,10 +56,10 @@
 		]
 	  },
 	  "protoIntersection" :{
-		"name": "pog.proto.intersection",
+		"name": "xeto.proto.intersection",
 		"patterns": [
 			{ "match": "&",
-				"name": "pog.proto.operator.intersection",
+				"name": "xeto.proto.operator.intersection",
 				"captures": {
 					"0": { "name": "keyword.control" }
 				}
@@ -68,7 +68,7 @@
 		]
 	  },
 	  "proto": {
-		"name": "pog.proto.container",
+		"name": "xeto.proto.container",
 		"patterns": [
 			{ "include": "#leadingDoc" },
 			{ "include": "#protoIntersection"},
@@ -77,14 +77,14 @@
 	  },
 	  "markerName": {
 		"match": "[a-z][a-zA-Z0-9_]*",
-		"name": "pog.name.marker",
+		"name": "xeto.name.marker",
 		"captures": {
 			"0": {"name": "entity.name.tag"}
 		}
 	  },
 	  "name": {
 		"match": "(([a-zA-Z][a-zA-Z0-9_]*)\\s*(:))|([a-zA-Z][a-zA-Z0-9_]*(?<!:))",
-		"name": "pog.name",
+		"name": "xeto.name",
 		"captures": {
 			"2": {"name": "entity.name.tag"},
 			"3": {"name": "keyword.operator"},
@@ -93,13 +93,13 @@
 	  },
 	  "qname": {
 		"match": "([a-zA-Z][a-zA-Z0-9_]*)(\\.[a-zA-Z][a-zA-Z0-9_]*)+",
-		"name": "pog.qname",
+		"name": "xeto.qname",
 		"captures": {
 			"0": {"name": "entity.name.type"}
 		}
 	  },
 	  "protoSimple": {
-		"name": "pog.proto.simple",
+		"name": "xeto.proto.simple",
 		"patterns": [
 			{ "include": "#protoUnnamed" },
 			{ "include": "#protoOptional" },
@@ -108,13 +108,13 @@
 		]
 	  },
 	  "protoMarker": {
-		"name": "pog.proto.marker",
+		"name": "xeto.proto.marker",
 		"patterns": [
 			{ "include": "#markerName" }
 		]
 	  },
 	  "protoVal": {
-		"name": "pog.proto.val",
+		"name": "xeto.proto.val",
 		"patterns": [
 			{ 
 				"match": "\"[^\"]*\"", 
@@ -128,7 +128,7 @@
 		]
 	  },
 	  "protoType": {
-		"name": "pog.proto.type",
+		"name": "xeto.proto.type",
 		"patterns": [
 			{ "include": "#qname" }
 		]
@@ -148,7 +148,7 @@
 		]
 	  },
 	  "protoUnnamed": {
-		"name": "pog.proto.unnamed",
+		"name": "xeto.proto.unnamed",
 		"patterns": [
 			{ "include": "#protoMeta"},
 			{ "include": "#protoData"},
@@ -161,7 +161,7 @@
 		"name": "keyword.operator"
 	  },
 	  "protoOptional": {
-		"name": "pog.proto.optional",
+		"name": "xeto.proto.optional",
 		"patterns": [
 			{ "include": "#qname"},
 			{ "include": "#optionalOperator"},
@@ -169,7 +169,7 @@
 		]
 	  },
 	  "protoNamed": {
-		"name": "pog.proto.named",
+		"name": "xeto.proto.named",
 		"patterns": [
 			{ "include": "#name" },
 			{ "include": "#protoUnnamed"}

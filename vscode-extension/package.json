@@ -1,7 +1,7 @@
 {
-	"name": "pog-extension",
-	"description": "A pog extension",
-	"displayName": "Pog",
+	"name": "xeto-extension",
+	"description": "A xeto extension",
+	"displayName": "Xeto",
 	"license": "MIT",
 	"version": "0.1.13",
 	"categories": [],
@@ -22,38 +22,38 @@
 	"contributes": {
 		"languages": [
 			{
-				"id": "pog",
+				"id": "xeto",
 				"extensions": [
-					".pog"
+					".xeto"
 				],
 				"configuration": "./language-configuration.json"
 			}
 		],
 		"grammars": [
 			{
-				"language": "pog",
-				"scopeName": "source.pog",
-				"path": "./syntaxes/pog.tmLanguage.json"
+				"language": "xeto",
+				"scopeName": "source.xeto",
+				"path": "./syntaxes/xeto.tmLanguage.json"
 			}
 		],
 		"configuration": {
 			"type": "object",
-			"title": "POG",
+			"title": "Xeto",
 			"properties": {
-				"pog.libraries.sys": {
+				"xeto.libraries.sys": {
 					"type": "string",
 					"default": "3eb1ce1326f7caa7a8162a36fc326e2e66e1abc6",
 					"markdownDescription": "Specifies the GIT **sha** for the desired version of sys libraries. The content of the libraries will be download from GH based on the provided **sha**."
 				},
-				"pog.libraries.external": {
+				"xeto.libraries.external": {
 					"type": "array",
 					"default": [],
-					"markdownDescription": "A list of locations for external libraries.\nThe entries can be either: \n* strings\n   * this needs to be a path to the local file system that vscode can access\n  * if the folder contains a **lib.pog** file then it is treated as a single library\n  * if **lib.pog** is missing, then each folder (just one level deep) is searched and considered a lib if **lib.pog** exists\n  * anything else is ignored\n* an object that describes the desired library. This is mostly used for **URLs**. The object should have the following structure\n   * **name**: name of the lib\n   * **lib**: URL path to **lib.pog** file. Version and docs will be read from this\n   * **files**: a string array with the URL to all the files of the lib\n\n Example of a lib entry: \n \n{\n \"name\": \"fakelib\",\n \"lib\": \"https://ex.com/fakelib/lib.pog\",\n  \"files\": [\n   \"https://ex.com/fakelib/meta.pog\"\n   \"https://ex.com/fakelib/tags.pog\"\n ]\n}\n \nIn case of name clashing libraries at **the top** of the array take precedence over libraries of the same name but **lower** in the array."
+					"markdownDescription": "A list of locations for external libraries.\nThe entries can be either: \n* strings\n   * this needs to be a path to the local file system that vscode can access\n  * if the folder contains a **lib.xeto** file then it is treated as a single library\n  * if **lib.xeto** is missing, then each folder (just one level deep) is searched and considered a lib if **lib.xeto** exists\n  * anything else is ignored\n* an object that describes the desired library. This is mostly used for **URLs**. The object should have the following structure\n   * **name**: name of the lib\n   * **lib**: URL path to **lib.xeto** file. Version and docs will be read from this\n   * **files**: a string array with the URL to all the files of the lib\n\n Example of a lib entry: \n \n{\n \"name\": \"fakelib\",\n \"lib\": \"https://ex.com/fakelib/lib.xeto\",\n  \"files\": [\n   \"https://ex.com/fakelib/meta.xeto\"\n   \"https://ex.com/fakelib/tags.xeto\"\n ]\n}\n \nIn case of name clashing libraries at **the top** of the array take precedence over libraries of the same name but **lower** in the array."
 				}
 			}
 		},
 		"configurationDefaults": {
-			"[pog]": {
+			"[xeto]": {
 				"editor.semanticHighlighting.enabled": true
 			},
 			"editor.semanticTokenColorCustomizations": {
