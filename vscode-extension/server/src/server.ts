@@ -617,7 +617,7 @@ connection.onHover(handleHover);
 function handleDefinition(params: DefinitionParams): Definition | null {
   const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
 
-  if (!proto) {
+  if (!proto || !proto.loc) {
     return null;
   }
 
