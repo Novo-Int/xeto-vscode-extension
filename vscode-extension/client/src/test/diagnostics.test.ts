@@ -8,7 +8,7 @@ import * as assert from 'assert';
 import { getDocUri, activate } from './helper';
 
 suite('Should get diagnostics', () => {
-	const docUri = getDocUri('diagnostics.pog');
+	const docUri = getDocUri('diagnostics.xeto');
 
 	test('Diagnoses defs', async () => {
 		await testDiagnostics(docUri, [

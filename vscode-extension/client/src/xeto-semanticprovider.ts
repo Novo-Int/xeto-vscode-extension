@@ -4,7 +4,7 @@ import {
 	LanguageClient,
 } from 'vscode-languageclient/node';
 
-export default class PogSemanticTokenProvider implements vscode.DocumentSemanticTokensProvider {
+export default class XetoSemanticTokenProvider implements vscode.DocumentSemanticTokensProvider {
 	private _client: LanguageClient;
 
 	constructor (client: LanguageClient) {
