@@ -1,16 +1,16 @@
 import { Proto } from '../compiler/Proto';
 import { findProtoByQname } from '../FindProto';
-import { PogLib } from './PogLib';
+import { XetoLib } from './XetoLib';
 
 const NAME_SEPARATOR = "#";
 export class LibraryManager {
-	private libs: Record<string, Record<string, PogLib>> = {};
+	private libs: Record<string, Record<string, XetoLib>> = {};
 
-	private getLibHash(lib: PogLib): string {
+	private getLibHash(lib: XetoLib): string {
 		return `${lib.name}${NAME_SEPARATOR}${lib.includePriority}`;
 	}
 
-	public addLib(lib: PogLib): void {
+	public addLib(lib: XetoLib): void {
 		if (this.libs[lib.name] === undefined) {
 			this.libs[lib.name] = {};
 		}
@@ -20,7 +20,7 @@ export class LibraryManager {
 		this.libs[lib.name][key] = lib;
 	}
 
-	public getLib(name: string): PogLib | undefined {
+	public getLib(name: string): XetoLib | undefined {
 		const libs = this.libs[name];
 
 		if (!libs) {

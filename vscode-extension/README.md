@@ -1,1 +1,1 @@
-# LanguageServer for POG files
+# LanguageServer for Xeto files

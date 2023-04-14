@@ -12,8 +12,8 @@ import {
 	TransportKind
 } from 'vscode-languageclient/node';
 
-import PogProvider from './pog-contentprovider';
-import PogSemanticTokenProvider from './pog-semanticprovider';
+import XetoProvider from './xeto-contentprovider';
+import XetoSemanticTokenProvider from './xeto-semanticprovider';
 
 let client: LanguageClient;
 
@@ -40,7 +40,7 @@ export function activate(context: ExtensionContext) {
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'pog' }],
+		documentSelector: [{ scheme: 'file', language: 'xeto' }],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
@@ -49,8 +49,8 @@ export function activate(context: ExtensionContext) {
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'pogServer',
-		'POG Server',
+		'xetoServer',
+		'Xeto Server',
 		serverOptions,
 		clientOptions
 	);
@@ -58,7 +58,7 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 
-	workspace.registerTextDocumentContentProvider('pog', new PogProvider());
+	workspace.registerTextDocumentContentProvider('xeto', new XetoProvider());
 
 	const legend = (function() {
 		const tokenTypesLegend = [
@@ -72,8 +72,8 @@ export function activate(context: ExtensionContext) {
 		return new SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
 	})();
 
-	const selector = { language: 'pog', scheme: 'file' };
-	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider(selector, new PogSemanticTokenProvider(client), legend));
+	const selector = { language: 'xeto', scheme: 'file' };
+	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider(selector, new XetoSemanticTokenProvider(client), legend));
 }
 
 export function deactivate(): Thenable<void> | undefined {

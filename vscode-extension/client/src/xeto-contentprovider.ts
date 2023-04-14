@@ -21,7 +21,7 @@ const readUrl = (url: string): Promise<string> => {
 	return pr;
 };
 
-export default class PogProvider implements vscode.TextDocumentContentProvider {
+export default class XetoProvider implements vscode.TextDocumentContentProvider {
 	//	the docs are imutable, as they are taken from a GH commit
 	//	as such we don't need to invalidate the cache
 	//	we only need to populate it as needed

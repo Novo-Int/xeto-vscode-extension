@@ -1,7 +1,7 @@
 import { FileLoc } from '../compiler/FileLoc';
 import { Proto } from '../compiler/Proto';
 
-export class PogLib {
+export class XetoLib {
 	private _version: string;
 	private _deps: string[] = [];
 
@@ -34,9 +34,9 @@ export class PogLib {
 	constructor(name: string, version: string, fileUri: string, doc = "") {
 		this.name = name;
 		this._version = version;
-		//	we always want this to point to lib.pog
-		if (fileUri.endsWith('lib.pog') === false) {
-			fileUri = fileUri.replace(/\/[^/]+$/, '/lib.pog');
+		//	we always want this to point to lib.xeto
+		if (fileUri.endsWith('lib.xeto') === false) {
+			fileUri = fileUri.replace(/\/[^/]+$/, '/lib.xeto');
 		}
 		this.rootProto = new Proto(name, 'sys.Root', new FileLoc(fileUri), doc);
 	}

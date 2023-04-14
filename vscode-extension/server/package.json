@@ -1,6 +1,6 @@
 {
-	"name": "pog-lsp",
-	"description": "Pog LSP for VSCode",
+	"name": "xeto-lsp",
+	"description": "Xeto LSP for VSCode",
 	"version": "0.1.6",
 	"author": "",
 	"license": "BSD-3",

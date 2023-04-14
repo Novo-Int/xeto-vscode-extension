@@ -7,8 +7,8 @@ export class CLib {
   readonly qname: string; // dotted qualified name
   readonly loc: FileLoc; // location of directory
   readonly source: string;
-  /*const File dir      // directory which contains lib.pog
-    const File[] src    // pog files (first is always lib.pog)
+  /*const File dir      // directory which contains lib.xeto
+    const File[] src    // xeto files (first is always lib.xeto)
     */
   readonly isSys: boolean; // is this the sys lib
   proto?: CProto; // proto cloned from sys.Lib

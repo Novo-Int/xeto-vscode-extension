@@ -1,11 +1,11 @@
 import { LibraryManager } from './LibManager';
-import { PogLib } from './PogLib';
+import { XetoLib } from './XetoLib';
 import { loadSysLibsFromGH } from './SysLibs';
 import { loadExtLibs, ExtLibDef } from './ExtLibs';
 
 export {
 	LibraryManager,
-	PogLib,
+	XetoLib,
 	loadSysLibsFromGH,
 	loadExtLibs,
 	ExtLibDef,

@@ -1,7 +1,7 @@
-# Visual studio POG extension
+# Visual studio XETO extension
 
-A VS Code extension that allows editing Pog files.
+A VS Code extension that allows editing Xeto files.
 
-# Pog
+# Xeto
 
 https://github.com/briansfrank/proto/
