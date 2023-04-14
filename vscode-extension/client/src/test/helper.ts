@@ -16,7 +16,7 @@ export let platformEol: string;
  */
 export async function activate(docUri: vscode.Uri) {
 	// The extensionId is `publisher.name` from package.json
-	const ext = vscode.extensions.getExtension('novo-studio.pog-extension')!;
+	const ext = vscode.extensions.getExtension('novo-studio.xeto-extension')!;
 	await ext.activate();
 	try {
 		doc = await vscode.workspace.openTextDocument(docUri);
