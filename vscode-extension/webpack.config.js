@@ -31,7 +31,7 @@ const browserClientConfig = {
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 		alias: {},
 		fallback: {
-			path: require.resolve('path-browserify'),
+			path: require.resolve('path-browserify')
 		},
 	},
 	module: {
@@ -49,6 +49,7 @@ const browserClientConfig = {
 	},
 	externals: {
 		vscode: 'commonjs vscode', // ignored because it doesn't exist
+		"node:https": "commonjs2 node:https"
 	},
 	performance: {
 		hints: false,
@@ -75,7 +76,7 @@ const browserServerConfig = {
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 		alias: {},
 		fallback: {
-			//path: require.resolve("path-browserify")
+			path: require.resolve("path-browserify")
 		},
 	},
 	module: {
@@ -93,6 +94,9 @@ const browserServerConfig = {
 	},
 	externals: {
 		vscode: 'commonjs vscode', // ignored because it doesn't exist
+		"node:https": "commonjs2 node:https",
+		"node:fs": "commonjs2 node:fs",
+		"node:path": "commonjs2 node:path"
 	},
 	performance: {
 		hints: false,

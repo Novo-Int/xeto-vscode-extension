@@ -19,7 +19,7 @@
 		"onLanguage:plaintext"
 	],
 	"main": "./client/out/extension",
-	"browser": "./client/out/web",
+	"browser": "./client/dist/browserClientMain",
 	"contributes": {
 		"languages": [
 			{
@@ -71,7 +71,7 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -b && webpack",
+		"compile": "tsc -b && webpack --mode production --devtool hidden-source-map",
 		"watch": "tsc -b -w",
 		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",

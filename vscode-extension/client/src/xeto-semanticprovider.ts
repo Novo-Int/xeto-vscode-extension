@@ -4,10 +4,14 @@ import {
 	LanguageClient,
 } from 'vscode-languageclient/node';
 
-export default class XetoSemanticTokenProvider implements vscode.DocumentSemanticTokensProvider {
-	private _client: LanguageClient;
+import {
+	LanguageClient as BrowserLanguageClient
+} from 'vscode-languageclient/browser';
 
-	constructor (client: LanguageClient) {
+export default class XetoSemanticTokenProvider implements vscode.DocumentSemanticTokensProvider {
+	private _client: LanguageClient | BrowserLanguageClient;
+
+	constructor (client: LanguageClient | BrowserLanguageClient) {
 		this._client = client;
 	}
 
