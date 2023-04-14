@@ -16,7 +16,7 @@
 		"vscode": "^1.73.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:xeto"
 	],
 	"main": "./client/out/extension",
 	"contributes": {
