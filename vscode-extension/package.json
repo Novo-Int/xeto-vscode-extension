@@ -3,7 +3,7 @@
 	"description": "A xeto extension",
 	"displayName": "Xeto",
 	"license": "MIT",
-	"version": "0.1.14",
+	"version": "0.1.15",
 	"categories": [],
 	"keywords": [
 		"multi-root ready"
@@ -16,7 +16,7 @@
 		"vscode": "^1.73.0"
 	},
 	"activationEvents": [
-		"onLanguage:plaintext"
+		"onLanguage:xeto"
 	],
 	"main": "./client/out/extension",
 	"browser": "./client/dist/browserClientMain",
