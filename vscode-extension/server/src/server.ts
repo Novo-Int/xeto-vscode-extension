@@ -37,7 +37,7 @@ import { Proto } from "./compiler/Proto";
 import { findChildrenOf, findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
-  PogLib,
+  XetoLib,
   loadSysLibsFromGH,
   loadExtLibs,
   ExtLibDef,
@@ -70,7 +70,7 @@ let hasDiagnosticRelatedInformationCapability = false;
 let rootFolders: string[] = [];
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
-const compilersToLibs: Map<ProtoCompiler, PogLib> = new Map();
+const compilersToLibs: Map<ProtoCompiler, XetoLib> = new Map();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -114,14 +114,14 @@ const parseAllRootFolders = () => {
     .forEach(async (folderPath) => {
       const files = await addWorkspaceRootToWatch(folderPath);
 
-      const pogFiles = files.filter((path) => path.endsWith(".pog"));
+      const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
 
-      pogFiles
+      xetoFiles
         .filter((file) => !docsToCompilerResults[`file://${file}`])
         .forEach(async (file) => {
           const textDocument = TextDocument.create(
             `file://${file}`,
-            "pog",
+            "xeto",
             1,
             await (await fs.readFile(file)).toString()
           );
@@ -197,7 +197,7 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 
   docsToCompilerResults = {};
 
-  const settings = await connection.workspace.getConfiguration("pog");
+  const settings = await connection.workspace.getConfiguration("xeto");
 
   loadSysLibsFromGH(settings.libraries.sys, libManager);
   loadExtLibs(
@@ -210,12 +210,12 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
   };
 });
 
-// Pog settings
+// Xeto settings
 type ExtLibSetting = {
   name: string;
   files: string[];
 };
-interface POGSettings {
+interface XetoSettings {
   libs: {
     external: ExtLibSetting[];
     system: string;
@@ -225,24 +225,24 @@ interface POGSettings {
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: POGSettings = {
+const defaultSettings: XetoSettings = {
   libs: {
     external: [],
     system: "",
   },
 };
 
-let globalSettings: POGSettings = defaultSettings;
+let globalSettings: XetoSettings = defaultSettings;
 
 // Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<POGSettings>> = new Map();
+const documentSettings: Map<string, Thenable<XetoSettings>> = new Map();
 
 connection.onDidChangeConfiguration((change) => {
   if (hasConfigurationCapability) {
     // Reset all cached document settings
     documentSettings.clear();
   } else {
-    globalSettings = <POGSettings>(
+    globalSettings = <XetoSettings>(
       (change.settings.languageServerExample || defaultSettings)
     );
   }
@@ -251,7 +251,7 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(parseDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<POGSettings> {
+function getDocumentSettings(resource: string): Thenable<XetoSettings> {
   if (!hasConfigurationCapability) {
     return Promise.resolve(globalSettings);
   }
@@ -259,7 +259,7 @@ function getDocumentSettings(resource: string): Thenable<POGSettings> {
   if (!result) {
     result = connection.workspace.getConfiguration({
       scopeUri: resource,
-      section: "pog",
+      section: "xeto",
     });
     documentSettings.set(resource, result);
   }
@@ -300,7 +300,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
   try {
     const stat = await fs.stat(
-      osPath.join(compiler.sourceUri.replace("file:/", ""), "..", "lib.pog")
+      osPath.join(compiler.sourceUri.replace("file:/", ""), "..", "lib.xeto")
     );
     if (stat.isFile()) {
       hasLib = true;
@@ -318,7 +318,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
     libName = split[split.length - 2];
   }
 
-  const isLibMeta = compiler.sourceUri.endsWith("lib.pog");
+  const isLibMeta = compiler.sourceUri.endsWith("lib.xeto");
 
   if (isLibMeta) {
     const pragma = compiler.root?.children["pragma"];
@@ -345,25 +345,25 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
   if (!libManager.getLib(libName)) {
     libManager.addLib(
-      new PogLib(libName, libVersion, compiler.sourceUri, libDoc)
+      new XetoLib(libName, libVersion, compiler.sourceUri, libDoc)
     );
   }
 
-  const pogLib = libManager.getLib(libName);
+  const xetoLib = libManager.getLib(libName);
 
-  if (!pogLib) {
+  if (!xetoLib) {
     return;
   }
 
-  compilersToLibs.set(compiler, pogLib);
+  compilersToLibs.set(compiler, xetoLib);
 
   if (libVersion) {
-    pogLib.addMeta(libVersion, libDoc, deps);
+    xetoLib.addMeta(libVersion, libDoc, deps);
   }
 
   if (!isLibMeta) {
     Object.entries(compiler.root.children).forEach(([name, proto]) => {
-      pogLib.addChild(name, proto);
+      xetoLib.addChild(name, proto);
     });
   }
 }

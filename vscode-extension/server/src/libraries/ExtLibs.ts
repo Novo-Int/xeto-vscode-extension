@@ -1,5 +1,5 @@
 import { LibraryManager } from "./LibManager";
-import { PogLib } from "./PogLib";
+import { XetoLib } from "./XetoLib";
 import { ProtoCompiler } from "../compiler/Compiler";
 import { readUrl } from "./utils";
 
@@ -12,24 +12,24 @@ const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
     const libName = path.basename(root);
 
     //	parse the lib file first
-    const libPogContents = fs.readFileSync(`${root}/lib.pog`).toString("utf-8");
+    const libXetoContents = fs.readFileSync(`${root}/lib.xeto`).toString("utf-8");
     const libInfoCompiler = new ProtoCompiler(root);
 
-    libInfoCompiler.run(libPogContents);
+    libInfoCompiler.run(libXetoContents);
 
     const libVersion =
       libInfoCompiler.root?.children["pragma"]?.children._version.type ||
       "unknown";
     const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
 
-    const lib = new PogLib(libName, libVersion, root, libDoc);
+    const lib = new XetoLib(libName, libVersion, root, libDoc);
     lib.includePriority = priority;
 
     //	parse all files
     files
       .filter(
         (file) =>
-          file.isFile() && file.name.endsWith("pog") && file.name !== "lib.pog"
+          file.isFile() && file.name.endsWith("xeto") && file.name !== "lib.xeto"
       )
       .forEach((file) => {
         const filePath = path.join(root, file.name);
@@ -60,12 +60,12 @@ const loadExtLibFromWeb = async (
 ) => {
   const libInfoUri = def.lib;
 
-  const libPog = await readUrl(libInfoUri);
+  const libXeto = await readUrl(libInfoUri);
   const libInfoCompiler = new ProtoCompiler(
-    libInfoUri.replace("https://", "pog://")
+    libInfoUri.replace("https://", "xeto://")
   );
   try {
-    libInfoCompiler.run(libPog);
+    libInfoCompiler.run(libXeto);
   } catch (e) {
     console.log(e);
   }
@@ -75,17 +75,17 @@ const loadExtLibFromWeb = async (
     "unknown";
   const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
 
-  const lib = new PogLib(
+  const lib = new XetoLib(
     def.name,
     libVersion,
-    libInfoUri.replace("https://", "pog://"),
+    libInfoUri.replace("https://", "xeto://"),
     libDoc
   );
   lib.includePriority = -1;
 
   // now that we have the lib read all the files
   const filesPr = def.files.map(async (uri) => {
-    const compiler = new ProtoCompiler(uri.replace("https://", "pog://"));
+    const compiler = new ProtoCompiler(uri.replace("https://", "xeto://"));
     const content = await readUrl(uri);
     compiler.run(content + "\0");
 
@@ -103,7 +103,7 @@ const loadExtLibFromWeb = async (
   lm.addLib(lib);
 };
 
-const isFolderLib = (path: string): boolean => fs.existsSync(`${path}/lib.pog`);
+const isFolderLib = (path: string): boolean => fs.existsSync(`${path}/lib.xeto`);
 
 export const loadExtLibs = (
   sources: (string | ExtLibDef)[],
@@ -116,7 +116,7 @@ export const loadExtLibs = (
         if (isFolderLib(root)) {
           loadExtLib(root, lm, sources.length - index);
         } else {
-          //	it doesn't have a lib.pog, so check all the folders and check if those are libs
+          //	it doesn't have a lib.xeto, so check all the folders and check if those are libs
           const entries = fs.readdirSync(root, { withFileTypes: true });
           entries
             .filter(

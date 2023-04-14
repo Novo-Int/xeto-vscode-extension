@@ -1,18 +1,18 @@
 import { ProtoCompiler } from '../compiler/Compiler';
 import { LibraryManager } from './LibManager';
-import { PogLib } from './PogLib';
+import { XetoLib } from './XetoLib';
 
 import { readUrl } from './utils';
 
 const librariesToAdd = [ {
 		name: 'sys',
-		files: ['meta.pog', 'types.pog'] as string[],
+		files: ['meta.xeto', 'types.xeto'] as string[],
 	}, {
 		name: 'ph',
-		files: ['tags.pog', 'kinds.pog', 'entities.pog'] as string[],
+		files: ['tags.xeto', 'kinds.xeto', 'entities.xeto'] as string[],
 	}, {
 		name: 'phx',
-		files: ['points.pog'] as string[],
+		files: ['points.xeto'] as string[],
 	}
 ] as const;
 
@@ -23,13 +23,13 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 
 	const libInfo = librariesToAdd[index];
 
-	//	reading lib.pog to get meta data about the library
-	const libInfoUri = `${baseURL}/${libInfo.name}/lib.pog`;
+	//	reading lib.xeto to get meta data about the library
+	const libInfoUri = `${baseURL}/${libInfo.name}/lib.xeto`;
 
-	const libPog = await readUrl(libInfoUri);
-	const libInfoCompiler = new ProtoCompiler(libInfoUri.replace('https://', 'pog://'));
+	const libXeto = await readUrl(libInfoUri);
+	const libInfoCompiler = new ProtoCompiler(libInfoUri.replace('https://', 'xeto://'));
 	try {
-		libInfoCompiler.run(libPog + '\0');
+		libInfoCompiler.run(libXeto + '\0');
 	} catch (e) {
 		console.log(e);
 	}
@@ -37,14 +37,14 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 	const libVersion = libInfoCompiler.root?.children['pragma']?.children._version.type || 'unknown';
 	const libDoc = libInfoCompiler.root?.children['pragma']?.doc || '';
 
-	const lib = new PogLib(libInfo.name, libVersion, libInfoUri.replace('https://', 'pog://'), libDoc);
+	const lib = new XetoLib(libInfo.name, libVersion, libInfoUri.replace('https://', 'xeto://'), libDoc);
 	lib.includePriority = -1;
 
 	// now that we have the lib read all the files
 	const filesPr = libInfo.files.map(async (fileName) => {
 		const uri = `${baseURL}/${libInfo.name}/${fileName}`;
 
-		const compiler = new ProtoCompiler(uri.replace('https://', 'pog://'));
+		const compiler = new ProtoCompiler(uri.replace('https://', 'xeto://'));
 		const content = await readUrl(uri);
 		compiler.run(content + '\0');
 
@@ -65,7 +65,7 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 };
 
 export const loadSysLibsFromGH = (sha: string, lm: LibraryManager): void => {
-	const baseURL = `https://raw.githubusercontent.com/briansfrank/proto/${sha}/pog`;
+	const baseURL = `https://raw.githubusercontent.com/haxall/haxall/${sha}/lib/data`;
 
 	processSysLibNo(baseURL, lm, 0);
 };
