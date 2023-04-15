@@ -95,14 +95,18 @@ const browserServerConfig = {
 			util: require.resolve('util'),
 			assert: require.resolve('assert'),
 			constants: require.resolve('constants-browserify'),
-			stream: require.resolve('stream-browserify')
+			stream: require.resolve('stream-browserify'),
+			process: require.resolve('process/browser')
 		},
 	},
 	plugins: [
 		new webpack.NormalModuleReplacementPlugin(/node:/, (resource) => {
             const mod = resource.request.replace(/^node:/, "");
 			resource.request = mod;
-        })
+        }),
+		new webpack.ProvidePlugin({
+			process: 'process/browser'
+		}),
 	],
 	module: {
 		rules: [
