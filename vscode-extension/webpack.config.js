@@ -12,6 +12,7 @@
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
 const path = require('path');
+const webpack = require('webpack');
 
 /** @type WebpackConfig */
 const browserClientConfig = {
@@ -26,12 +27,23 @@ const browserClientConfig = {
 		path: path.join(__dirname, 'client', 'dist'),
 		libraryTarget: 'commonjs',
 	},
+	plugins: [
+		new webpack.NormalModuleReplacementPlugin(/node:/, (resource) => {
+            const mod = resource.request.replace(/^node:/, "");
+			resource.request = mod;
+        })
+	],
 	resolve: {
 		mainFields: ['module', 'main'],
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 		alias: {},
 		fallback: {
-			path: require.resolve('path-browserify')
+			path: require.resolve('path-browserify'),
+			https: require.resolve('https-browserify'),
+			http: require.resolve('stream-http'),
+			url: require.resolve('url'),
+			fs: require.resolve('fs'),
+			util: require.resolve('util')
 		},
 	},
 	module: {
@@ -49,7 +61,6 @@ const browserClientConfig = {
 	},
 	externals: {
 		vscode: 'commonjs vscode', // ignored because it doesn't exist
-		"node:https": "commonjs2 node:https"
 	},
 	performance: {
 		hints: false,
@@ -76,9 +87,23 @@ const browserServerConfig = {
 		extensions: ['.ts', '.js'], // support ts-files and js-files
 		alias: {},
 		fallback: {
-			path: require.resolve("path-browserify")
+			path: require.resolve("path-browserify"),
+			https: require.resolve('https-browserify'),
+			http: require.resolve('stream-http'),
+			url: require.resolve('url'),
+			fs: require.resolve('fs-extra'),
+			util: require.resolve('util'),
+			assert: require.resolve('assert'),
+			constants: require.resolve('constants-browserify'),
+			stream: require.resolve('stream-browserify')
 		},
 	},
+	plugins: [
+		new webpack.NormalModuleReplacementPlugin(/node:/, (resource) => {
+            const mod = resource.request.replace(/^node:/, "");
+			resource.request = mod;
+        })
+	],
 	module: {
 		rules: [
 			{
@@ -94,9 +119,6 @@ const browserServerConfig = {
 	},
 	externals: {
 		vscode: 'commonjs vscode', // ignored because it doesn't exist
-		"node:https": "commonjs2 node:https",
-		"node:fs": "commonjs2 node:fs",
-		"node:path": "commonjs2 node:path"
 	},
 	performance: {
 		hints: false,
