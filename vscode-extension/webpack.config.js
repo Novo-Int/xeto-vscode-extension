@@ -33,7 +33,8 @@ const browserClientConfig = {
 			resource.request = mod;
         }),
 		new webpack.ProvidePlugin({
-			process: 'process/browser'
+			process: 'process/browser',
+			Buffer: ['buffer', 'Buffer']
 		}),
 	],
 	resolve: {
@@ -45,6 +46,7 @@ const browserClientConfig = {
 			https: require.resolve('https-browserify'),
 			http: require.resolve('stream-http'),
 			url: require.resolve('url'),
+			buffer: require.resolve('buffer/'),
 			fs: false,
 			process: require.resolve('process/browser'),
 		},
@@ -94,7 +96,7 @@ const browserServerConfig = {
 			https: require.resolve('https-browserify'),
 			http: require.resolve('stream-http'),
 			url: require.resolve('url'),
-			buffer: require.resolve('buffer'),
+			buffer: require.resolve('buffer/'),
 			fs: false,
 			assert: require.resolve('assert'),
 			constants: require.resolve('constants-browserify'),
