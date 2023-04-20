@@ -17,7 +17,7 @@ export function activate(context: ExtensionContext) {
 	 * all except the code to create the language client in not browser specific
 	 * and could be shared with a regular (Node) extension
 	 */
-	const documentSelector = [{ scheme: 'file', language: 'xeto' }];
+	const documentSelector = [{ language: 'xeto' }];
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
@@ -44,7 +44,7 @@ export function activate(context: ExtensionContext) {
 		return new SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
 	})();
 
-	const selector = { language: 'xeto', scheme: 'file' };
+	const selector = { language: 'xeto' };
 	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider(selector, new XetoSemanticTokenProvider(client), legend));
 
 	client.onReady().then(() => {
