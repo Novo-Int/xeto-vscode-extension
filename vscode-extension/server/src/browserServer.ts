@@ -28,8 +28,6 @@ import {
 
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 
-import osPath = require("path");
-
 import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
@@ -56,8 +54,6 @@ import {
 } from "vscode-languageserver";
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
-
-import * as vscode from "vscode";
 
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
@@ -96,6 +92,7 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
   return [ret];
 };
 
+/*
 const addWorkspaceRootToWatch = async (uri: vscode.Uri, storage: string[] = []) => {
   const files = await vscode.workspace.fs.readDirectory(uri);
 
@@ -134,11 +131,14 @@ const parseAllRootFolders = () => {
         });
     });
 };
+*/
 
 connection.onInitialize((params: InitializeParams) => {
   rootFolders = getRootFolderFromParams(params);
 
-  parseAllRootFolders();
+  console.log(rootFolders);
+
+  // parseAllRootFolders();
 
   const capabilities = params.capabilities;
 
@@ -273,7 +273,7 @@ documents.onDidClose((e) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-  parseAllRootFolders();
+  // parseAllRootFolders();
 
   parseDocument(change.document);
 });
@@ -295,13 +295,15 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
   }
 
   const split = compiler.sourceUri.split("/");
-  let hasLib = false;
 
+  let hasLib = false;
   try {
-    const stat = await vscode.workspace.fs.stat(
-		vscode.Uri.parse(compiler.sourceUri + "/../lib.xeto")
-    );
-    if (stat.type === vscode.FileType.File) {
+    const splitCopy = [...split];
+    splitCopy.pop();
+    splitCopy.push("lib.xeto");
+    const libUrl = splitCopy.join("/");
+
+    if (docsToCompilerResults[libUrl]) {
       hasLib = true;
     }
   } catch {
