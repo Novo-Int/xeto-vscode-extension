@@ -3,7 +3,7 @@
 	"description": "A xeto extension",
 	"displayName": "Xeto",
 	"license": "MIT",
-	"version": "0.1.18",
+	"version": "0.1.19",
 	"categories": [],
 	"keywords": [
 		"multi-root ready"
