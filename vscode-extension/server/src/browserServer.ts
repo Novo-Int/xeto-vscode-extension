@@ -92,16 +92,15 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
   return [ret];
 };
 
-/*
-const addWorkspaceRootToWatch = async (uri: vscode.Uri, storage: string[] = []) => {
-  const files = await vscode.workspace.fs.readDirectory(uri);
+const addWorkspaceRootToWatch = async (path: string, storage: string[] = []) => {
+  const files: [] = await connection.sendRequest('xfs/readDir', { path });
 
   await Promise.all(
     files.map((entry) => {
-      if (entry[1] === vscode.FileType.Directory) {
-        return addWorkspaceRootToWatch(vscode.Uri.joinPath(uri, entry[0]), storage);
+      if (entry[1] === 2) {
+        return addWorkspaceRootToWatch(`${path}/${entry[0]}`, storage);
       } else {
-        storage.push(`${uri}/${entry[0]}`);
+        storage.push(`${path}/${entry[0]}`);
       }
     })
   );
@@ -113,7 +112,7 @@ const parseAllRootFolders = () => {
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach(async (folderPath) => {
-      const files = await addWorkspaceRootToWatch(vscode.Uri.parse(folderPath));
+      const files = await addWorkspaceRootToWatch(folderPath);
 
       const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
 
@@ -124,21 +123,19 @@ const parseAllRootFolders = () => {
             file,
             "xeto",
             1,
-            (await vscode.workspace.fs.readFile(vscode.Uri.parse(file))).toString()
+            (await connection.sendRequest('xfs/readFile', {path: file}))
           );
 
           parseDocument(textDocument);
         });
     });
 };
-*/
+
 
 connection.onInitialize((params: InitializeParams) => {
   rootFolders = getRootFolderFromParams(params);
 
-  console.log(rootFolders);
-
-  // parseAllRootFolders();
+  parseAllRootFolders();
 
   const capabilities = params.capabilities;
 
@@ -273,7 +270,7 @@ documents.onDidClose((e) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-  // parseAllRootFolders();
+  parseAllRootFolders();
 
   parseDocument(change.document);
 });
@@ -296,19 +293,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
   const split = compiler.sourceUri.split("/");
 
-  let hasLib = false;
-  try {
-    const splitCopy = [...split];
-    splitCopy.pop();
-    splitCopy.push("lib.xeto");
-    const libUrl = splitCopy.join("/");
-
-    if (docsToCompilerResults[libUrl]) {
-      hasLib = true;
-    }
-  } catch {
-    return;
-  }
+  const hasLib = await connection.sendRequest('xfs/exists', {path: [...[...split].slice(0, -1), "lib.xeto"].join("/")});
 
   let libName: string | undefined = undefined;
   let libVersion = "";
