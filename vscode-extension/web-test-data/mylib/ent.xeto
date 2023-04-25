@@ -1,0 +1,17 @@
+//	comment here
+A1: {
+	f1,
+	f2,
+	nested: {
+		ceva: ph.Tags.output
+	}
+}
+
+A2: {
+	alias: A1.f1,
+	alias2: A1.nested.ceva
+}
+
+A3: {
+
+}

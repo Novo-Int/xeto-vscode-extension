@@ -31,7 +31,11 @@ const browserClientConfig = {
 		new webpack.NormalModuleReplacementPlugin(/node:/, (resource) => {
             const mod = resource.request.replace(/^node:/, "");
 			resource.request = mod;
-        })
+        }),
+		new webpack.ProvidePlugin({
+			process: 'process/browser',
+			Buffer: ['buffer', 'Buffer']
+		}),
 	],
 	resolve: {
 		mainFields: ['module', 'main'],
@@ -42,8 +46,9 @@ const browserClientConfig = {
 			https: require.resolve('https-browserify'),
 			http: require.resolve('stream-http'),
 			url: require.resolve('url'),
-			fs: require.resolve('fs'),
-			util: require.resolve('util')
+			buffer: require.resolve('buffer/'),
+			fs: false,
+			process: require.resolve('process/browser'),
 		},
 	},
 	module: {
@@ -91,12 +96,12 @@ const browserServerConfig = {
 			https: require.resolve('https-browserify'),
 			http: require.resolve('stream-http'),
 			url: require.resolve('url'),
-			fs: require.resolve('fs-extra'),
-			util: require.resolve('util'),
+			buffer: require.resolve('buffer/'),
+			fs: false,
 			assert: require.resolve('assert'),
 			constants: require.resolve('constants-browserify'),
 			stream: require.resolve('stream-browserify'),
-			process: require.resolve('process/browser')
+			process: require.resolve('process/browser'),
 		},
 	},
 	plugins: [
@@ -105,7 +110,8 @@ const browserServerConfig = {
 			resource.request = mod;
         }),
 		new webpack.ProvidePlugin({
-			process: 'process/browser'
+			process: 'process/browser',
+			Buffer: ['buffer', 'Buffer']
 		}),
 	],
 	module: {

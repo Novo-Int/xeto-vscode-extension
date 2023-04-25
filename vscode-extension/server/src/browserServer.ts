@@ -28,8 +28,6 @@ import {
 
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 
-import osPath = require("path");
-
 import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
@@ -56,8 +54,6 @@ import {
 } from "vscode-languageserver";
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
-
-import * as vscode from "vscode";
 
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
@@ -96,15 +92,15 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
   return [ret];
 };
 
-const addWorkspaceRootToWatch = async (uri: vscode.Uri, storage: string[] = []) => {
-  const files = await vscode.workspace.fs.readDirectory(uri);
+const addWorkspaceRootToWatch = async (path: string, storage: string[] = []) => {
+  const files: [] = await connection.sendRequest('xfs/readDir', { path });
 
   await Promise.all(
     files.map((entry) => {
-      if (entry[1] === vscode.FileType.Directory) {
-        return addWorkspaceRootToWatch(vscode.Uri.joinPath(uri, entry[0]), storage);
+      if (entry[1] === 2) {
+        return addWorkspaceRootToWatch(`${path}/${entry[0]}`, storage);
       } else {
-        storage.push(`${uri}/${entry[0]}`);
+        storage.push(`${path}/${entry[0]}`);
       }
     })
   );
@@ -116,7 +112,7 @@ const parseAllRootFolders = () => {
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach(async (folderPath) => {
-      const files = await addWorkspaceRootToWatch(vscode.Uri.parse(folderPath));
+      const files = await addWorkspaceRootToWatch(folderPath);
 
       const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
 
@@ -127,13 +123,14 @@ const parseAllRootFolders = () => {
             file,
             "xeto",
             1,
-            (await vscode.workspace.fs.readFile(vscode.Uri.parse(file))).toString()
+            (await connection.sendRequest('xfs/readFile', {path: file}))
           );
 
           parseDocument(textDocument);
         });
     });
 };
+
 
 connection.onInitialize((params: InitializeParams) => {
   rootFolders = getRootFolderFromParams(params);
@@ -295,18 +292,8 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
   }
 
   const split = compiler.sourceUri.split("/");
-  let hasLib = false;
 
-  try {
-    const stat = await vscode.workspace.fs.stat(
-		vscode.Uri.parse(compiler.sourceUri + "/../lib.xeto")
-    );
-    if (stat.type === vscode.FileType.File) {
-      hasLib = true;
-    }
-  } catch {
-    return;
-  }
+  const hasLib = await connection.sendRequest('xfs/exists', {path: [...[...split].slice(0, -1), "lib.xeto"].join("/")});
 
   let libName: string | undefined = undefined;
   let libVersion = "";

@@ -1,0 +1,12 @@
+// 
+
+pragma: Lib <
+  doc: "Some doc"
+  version: "0.1.0"
+  depends: {
+  }
+  org: {
+   dis: "Test LIB"
+   uri: "https://project-haystack.org/"
+  }
+>

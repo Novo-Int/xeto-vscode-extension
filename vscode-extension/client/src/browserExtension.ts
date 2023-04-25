@@ -5,7 +5,6 @@
 import { ExtensionContext, Uri, workspace, SemanticTokensLegend, languages } from 'vscode';
 import { LanguageClientOptions } from 'vscode-languageclient';
 
-
 import { LanguageClient } from 'vscode-languageclient/browser';
 
 import XetoProvider from './xeto-contentprovider';
@@ -17,7 +16,7 @@ export function activate(context: ExtensionContext) {
 	 * all except the code to create the language client in not browser specific
 	 * and could be shared with a regular (Node) extension
 	 */
-	const documentSelector = [{ scheme: 'file', language: 'xeto' }];
+	const documentSelector = [{ language: 'xeto' }];
 
 	// Options to control the language client
 	const clientOptions: LanguageClientOptions = {
@@ -44,12 +43,52 @@ export function activate(context: ExtensionContext) {
 		return new SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
 	})();
 
-	const selector = { language: 'xeto', scheme: 'file' };
+	const selector = { language: 'xeto' };
 	context.subscriptions.push(languages.registerDocumentSemanticTokensProvider(selector, new XetoSemanticTokenProvider(client), legend));
 
 	client.onReady().then(() => {
 		console.log("XETO started");
+		initFS(client);
 	});
+}
+
+type XFSEvent = {
+	path: string,
+}
+
+function initFS(client: LanguageClient) {
+	client.onRequest('xfs/exists', async (e: XFSEvent) => {
+		try {
+			await workspace.fs.stat(Uri.parse(e.path));
+			return true;
+		} catch {
+			return false;
+		}
+	});
+
+	client.onRequest('xfs/readDir', async (e: XFSEvent) => {
+		try {
+			const results = await workspace.fs.readDirectory(Uri.parse(e.path));
+			return results;
+		} catch {
+			return false;
+		}
+	});
+
+	client.onRequest('xfs/readFile', async (e: XFSEvent) => {
+		try {
+			const result = await workspace.fs.readFile(Uri.parse(e.path));
+			return fileArrayToString(result);
+		} catch {
+			return false;
+		}
+	});
+}
+
+function fileArrayToString(bufferArray: Uint8Array) {
+	return Array.from(bufferArray)
+		.map((item) => String.fromCharCode(item))
+		.join("");
 }
 
 function createWorkerLanguageClient(context: ExtensionContext, clientOptions: LanguageClientOptions) {
