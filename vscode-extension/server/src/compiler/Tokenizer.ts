@@ -1,6 +1,6 @@
 import { CompilerError, ErrorTypes } from './Errors';
 import { FileLoc } from './FileLoc';
-import { isAlpha, isAlphaNumeric, toHex, toCode } from "./StringUtils";
+import { isAlpha, isAlphaNumeric, isNumeric, toHex, toCode } from "./StringUtils";
 import { Token } from "./Token";
 
 export class Tokenizer {
@@ -94,6 +94,16 @@ export class Tokenizer {
 
     if (this.cur === '"') {
       this.tok = this.str();
+      return this.tok;
+    }
+
+    if (isNumeric(this.cur)) {
+      this.tok = this.num();
+      return this.tok;
+    }
+
+    if (this.cur === '-' && isNumeric(this.peek)) {
+      this.tok = this.num();
       return this.tok;
     }
 
@@ -234,6 +244,20 @@ export class Tokenizer {
     }
 
     throw new Error("Invalid escape sequence");
+  }
+
+  private num(): Token {
+    let s = "";
+    while (this.isNum(this.cur)) {
+      s += this.cur;
+      this.consume();
+    }
+    this.val = s;
+    return Token.VAL;
+  }
+
+  private isNum(c: string): boolean {
+    return isAlphaNumeric(c) || c === '-' || c == '.' || c == '$' || c == ':' || c == '/' || c == '%' || c.charCodeAt(0) > 128;
   }
 
   private operator(): Token {
