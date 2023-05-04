@@ -1,6 +1,7 @@
 export class Token {
   static ID = new Token("identifier");
   static STR = new Token("Str", true);
+  static VAL = new Token("value", true);
 
   // operators
   static DOT = new Token(".");
