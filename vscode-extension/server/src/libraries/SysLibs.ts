@@ -9,11 +9,17 @@ const librariesToAdd = [ {
 		files: ['meta.xeto', 'types.xeto'] as string[],
 	}, {
 		name: 'ph',
-		files: ['tags.xeto', 'kinds.xeto', 'entities.xeto'] as string[],
+		files: ['kinds.xeto', 'entities.xeto'] as string[],
 	}, {
-		name: 'phx',
-		files: ['points.xeto'] as string[],
-	}
+		name: 'ph.equips',
+		files: ['equips.xeto'] as string[],
+	}, {
+		name: 'ph.points',
+		files: ['air-flow.xeto', 'air-humidity.xeto', 'air-presusre.xeto', 'air-temp.xeto', 'base.xeto', 'co2.xeto', 'damper.xeto', 'fan.xeto', 'misc.xeto', 'motor.xeto', 'occupied.xeto', 'valve.xeto'] as string[],
+	}, {
+		name: 'ashrae.g36',
+		files: ['vavs.xeto'] as string[],
+	},
 ] as const;
 
 const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: number): Promise<void> => {
