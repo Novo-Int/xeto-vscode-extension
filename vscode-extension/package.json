@@ -43,7 +43,7 @@
 			"properties": {
 				"xeto.libraries.sys": {
 					"type": "string",
-					"default": "bd396c800b22389c52ca42d2577f7085794f6de5",
+					"default": "2bbf12983eda97fb1e22de80e8356c91fd1ae881",
 					"markdownDescription": "Specifies the GIT **sha** for the desired version of sys libraries. The content of the libraries will be download from GH based on the provided **sha**."
 				},
 				"xeto.libraries.external": {
