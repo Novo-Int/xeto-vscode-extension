@@ -15,7 +15,7 @@ const librariesToAdd = [ {
 		files: ['equips.xeto'] as string[],
 	}, {
 		name: 'ph.points',
-		files: ['air-flow.xeto', 'air-humidity.xeto', 'air-presusre.xeto', 'air-temp.xeto', 'base.xeto', 'co2.xeto', 'damper.xeto', 'fan.xeto', 'misc.xeto', 'motor.xeto', 'occupied.xeto', 'valve.xeto'] as string[],
+		files: ['air-flow.xeto', 'air-humidity.xeto', 'air-pressure.xeto', 'air-temp.xeto', 'base.xeto', 'co2.xeto', 'damper.xeto', 'fan.xeto', 'misc.xeto', 'motor.xeto', 'occupied.xeto', 'valve.xeto'] as string[],
 	}, {
 		name: 'ashrae.g36',
 		files: ['vavs.xeto'] as string[],
@@ -71,7 +71,7 @@ const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: numbe
 };
 
 export const loadSysLibsFromGH = (sha: string, lm: LibraryManager): void => {
-	const baseURL = `https://raw.githubusercontent.com/haxall/haxall/${sha}/lib/data`;
+	const baseURL = `https://raw.githubusercontent.com/haxall/haxall/${sha}/src/xeto`;
 
 	processSysLibNo(baseURL, lm, 0);
 };
