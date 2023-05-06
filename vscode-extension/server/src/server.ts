@@ -528,20 +528,28 @@ function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
 
   //	maybe the identifier is from a lib
   if (options.length === 0) {
-    const libName = partialIdentifier.split(".")[0];
-    const lib = libManager.getLib(libName);
+    let lib = null;
+    let currentSize = 1;
+    const parts = partialIdentifier.split(".");
 
-    if (!lib) {
-      return [];
-    }
+    //  libraries can contain dots in their names
+    do {
+      const libName = parts.slice(0, currentSize);
 
-    //	get compilers for files that have this lib
-    const identifierWithoutLib = partialIdentifier
-      .split(".")
-      .slice(1)
-      .join(".");
+      lib = libManager.getLib(libName.join("."));
 
-    options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+      if (lib) {
+        //	get compilers for files that have this lib
+        const identifierWithoutLib = parts.slice(currentSize).join(".");
+
+        options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+        if (options.length) {
+          break;
+        }
+      }
+
+      currentSize ++;
+    } while(currentSize <= parts.length);
   }
 
   return options.map((op) => ({
