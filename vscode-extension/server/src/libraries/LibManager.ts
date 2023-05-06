@@ -55,21 +55,35 @@ export class LibraryManager {
 		}
 
 		const split = qname.split('.');
-		const libName = split[0];
+		let currentSize = 1;
 
-		const lib = this.getLib(libName);
+		//	libs can contain dot(.)
+		do {
+			const libName = split.slice(0, currentSize).join(".");
 
-		if (!lib) {
-			//	mayber this is a sys proto
-			const sysLib = this.getLib('sys');
+			const lib = this.getLib(libName);
 
-			if (!sysLib) {
-				return null;
+			if (!lib) {
+				currentSize ++;
+				continue;
 			}
 
-			return findProtoByQname(qname, sysLib.rootProto);
+			const proto = findProtoByQname(split.slice(currentSize).join('.'), lib.rootProto);
+
+			if (proto) {
+				return proto;
+			}
+
+			currentSize ++;
+		} while(currentSize <= split.length);
+
+		//	mayber this is a sys proto
+		const sysLib = this.getLib('sys');
+
+		if (!sysLib) {
+			return null;
 		}
 
-		return findProtoByQname(split.slice(1).join('.'), lib.rootProto);
+		return findProtoByQname(qname, sysLib.rootProto);
 	}
 }
