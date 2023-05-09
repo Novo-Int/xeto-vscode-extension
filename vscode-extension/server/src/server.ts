@@ -9,11 +9,8 @@ import {
   ProposedFeatures,
   InitializeParams,
   DidChangeConfigurationNotification,
-  CompletionItem,
-  CompletionItemKind,
   TextDocumentSyncKind,
   InitializeResult,
-  CompletionParams,
   DidChangeWatchedFilesNotification,
   HoverParams,
   Hover,
@@ -34,7 +31,7 @@ import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
 import { Dirent } from "fs";
 import { Proto } from "./compiler/Proto";
-import { findChildrenOf, findProtoByQname } from "./FindProto";
+import { findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
   XetoLib,
@@ -46,19 +43,17 @@ import {
   extractSemanticProtos,
   convertProtosToSemanticTokens,
 } from "./semantic-tokens";
-import { renameInDoc } from "./refactor";
 import {
   DocumentSymbol,
   DocumentSymbolParams,
-  RenameParams,
   TextEdit,
-  WorkspaceEdit,
 } from "vscode-languageserver";
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
 
 import {
-  addAutoCompletion
+  addAutoCompletion,
+  addRenameSymbol
 } from "./capabilities";
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -659,131 +654,7 @@ function onDocumentFormatting(params: DocumentFormattingParams): TextEdit[] {
 
 connection.onDocumentFormatting(onDocumentFormatting);
 
-function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
-  const uri = params.textDocument.uri;
-
-  const compiler = docsToCompilerResults[uri];
-  const doc = documents.get(params.textDocument.uri);
-
-  if (!compiler || !doc) {
-    return null;
-  }
-
-  //  we need this because the selection for renaming may be in the middle of the identifier
-  const startCharacter =
-    params.position.character - getIdentifierLength(doc, params.position) + 1;
-
-  const protoName = compiler.getQNameByLocation({
-    line: params.position.line,
-    character: startCharacter,
-  });
-
-  //  trying to rename a symbol that's not defined in this compilation unit
-  if (protoName === "") {
-    return null;
-  }
-
-  const proto =
-    (compiler.root && findProtoByQname(protoName, compiler.root)) || null;
-
-  if (!proto) {
-    return null;
-  }
-
-  //  bail out if replacing with the same string
-  if (proto.name === params.newName) {
-    return null;
-  }
-
-  const workspaceEdit = {
-    changes: {},
-  } as {
-    changes: Record<string, TextEdit[]>;
-  };
-
-  workspaceEdit.changes[uri] = [
-    {
-      range: {
-        start: {
-          character: startCharacter - 1,
-          line: params.position.line,
-        },
-        end: {
-          character: startCharacter - 1 + proto.name.length,
-          line: params.position.line,
-        },
-      },
-      newText: params.newName,
-    },
-    ...renameInDoc(params, protoName, doc, compiler),
-  ];
-
-  //  refactor in entire workspace
-  Object.keys(docsToCompilerResults).forEach((docUri) => {
-    //	skip current doc
-    if (docUri === uri) {
-      return;
-    }
-
-    //  we also want to skip if files are in different libs
-    if (
-      compilersToLibs.get(docsToCompilerResults[docUri]) !==
-      compilersToLibs.get(compiler)
-    ) {
-      return;
-    }
-
-    const doc = documents.get(docUri);
-
-    if (!doc) {
-      return;
-    }
-
-    const edits = renameInDoc(
-      params,
-      protoName,
-      doc,
-      docsToCompilerResults[docUri]
-    );
-
-    if (edits.length) {
-      workspaceEdit.changes[docUri] = edits;
-    }
-  });
-
-  //  if proto is part of a lib then we need to add the lib name to it also
-  const lib = compilersToLibs.get(compiler);
-  if (lib) {
-    //  refactor in entire workspace
-    Object.keys(docsToCompilerResults).forEach((docUri) => {
-      //	skip current doc
-      if (docUri === uri) {
-        return;
-      }
-
-      const doc = documents.get(docUri);
-
-      if (!doc) {
-        return;
-      }
-
-      const edits = renameInDoc(
-        params,
-        lib.name + "." + protoName,
-        doc,
-        docsToCompilerResults[docUri]
-      );
-
-      if (edits.length) {
-        workspaceEdit.changes[docUri] = edits;
-      }
-    });
-  }
-
-  return workspaceEdit;
-}
-
-connection.onRenameRequest(onSymbolRename);
+addRenameSymbol(connection, docsToCompilerResults, documents, compilersToLibs);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

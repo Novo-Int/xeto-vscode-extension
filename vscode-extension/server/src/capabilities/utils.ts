@@ -1,8 +1,12 @@
 import { TextDocument, Position } from "vscode-languageserver-textdocument";
 
 const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
+const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
-export function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
+export function getIdentifierForPosition(
+  doc: TextDocument,
+  pos: Position
+): string {
   let position = doc.offsetAt(pos) - 1;
   const text = doc.getText();
 
@@ -21,4 +25,20 @@ export function getIdentifierForPosition(doc: TextDocument, pos: Position): stri
   identifier = identifier.trim().replace(/[\n\t]/g, "");
 
   return identifier;
+}
+
+export function getIdentifierLength(doc: TextDocument, pos: Position): number {
+  let position = doc.offsetAt(pos) - 1;
+  let length = 0;
+  const text = doc.getText();
+
+  while (
+    position >= -1 &&
+    text.charAt(position).match(identifierSegmentCharRegexp)
+  ) {
+    position--;
+    length++;
+  }
+
+  return length;
 }
