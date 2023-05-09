@@ -348,12 +348,17 @@ export class Parser {
         child.traits['#isMeta'] = {
         };
       }
-      if (parent.traits[name]) {
+      //  we may have an optional with meta
+      if (parent.traits[name] && name !== "_of") {
         this.generateDuplicateDefErr(parent, child);
       }
     }
 
-    parent.traits[name] = child.traits;
+    if (name === "_of" && parent.traits[name]) {
+      (parent.traits[name] as Record<string, any>)["_of"] = child.traits;
+    } else {
+      parent.traits[name] = child.traits;
+    }
   }
 
   private generateDuplicateDefErr(parent: ParsedProto, child: ParsedProto): void {
