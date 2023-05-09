@@ -57,6 +57,10 @@ import {
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
 
+import {
+  addAutoCompletion
+} from "./capabilities";
+
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -506,68 +510,7 @@ function getLargestIdentifierForPosition(
   return identifier.split(".");
 }
 
-function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
-  // let try to find the identifier for this position
-  const compiledDocument = docsToCompilerResults[params.textDocument.uri];
-  const doc = documents.get(params.textDocument.uri);
-
-  if (!compiledDocument || !doc) {
-    return [];
-  }
-
-  const partialIdentifier = getIdentifierForPosition(doc, params.position);
-
-  if (!partialIdentifier) {
-    return [];
-  }
-
-  let options =
-    (compiledDocument.root &&
-      findChildrenOf(partialIdentifier, compiledDocument.root)) ||
-    [];
-
-  //	maybe the identifier is from a lib
-  if (options.length === 0) {
-    let lib = null;
-    let currentSize = 1;
-    const parts = partialIdentifier.split(".");
-
-    //  libraries can contain dots in their names
-    do {
-      const libName = parts.slice(0, currentSize);
-
-      lib = libManager.getLib(libName.join("."));
-
-      if (lib) {
-        //	get compilers for files that have this lib
-        const identifierWithoutLib = parts.slice(currentSize).join(".");
-
-        options = findChildrenOf(identifierWithoutLib, lib.rootProto);
-        if (options.length) {
-          break;
-        }
-      }
-
-      currentSize ++;
-    } while(currentSize <= parts.length);
-  }
-
-  return options.map((op) => ({
-    label: op.label,
-    kind: CompletionItemKind.Field,
-    detail: op.parent,
-    documentation: op.doc,
-  }));
-}
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(handleAutoCompletion);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  return item;
-});
+addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
 function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
   // let try to find the identifier for this position

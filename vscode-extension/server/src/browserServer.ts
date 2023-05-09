@@ -6,14 +6,10 @@ import {
   TextDocuments,
   Diagnostic,
   DiagnosticSeverity,
-  ProposedFeatures,
   InitializeParams,
   DidChangeConfigurationNotification,
-  CompletionItem,
-  CompletionItemKind,
   TextDocumentSyncKind,
   InitializeResult,
-  CompletionParams,
   DidChangeWatchedFilesNotification,
   HoverParams,
   Hover,
@@ -32,7 +28,7 @@ import { ProtoCompiler } from "./compiler/Compiler";
 import { CompilerError } from "./compiler/Errors";
 import { FileLoc } from "./compiler/FileLoc";
 import { Proto } from "./compiler/Proto";
-import { findChildrenOf, findProtoByQname } from "./FindProto";
+import { findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
   XetoLib,
@@ -55,6 +51,10 @@ import {
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
 
+import {
+  addAutoCompletion
+} from "./capabilities";
+
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
 
@@ -69,7 +69,7 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let rootFolders: string[] = [];
 
-let docsToCompilerResults: Record<string, ProtoCompiler> = {};
+const docsToCompilerResults: Record<string, ProtoCompiler> = {};
 const compilersToLibs: Map<ProtoCompiler, XetoLib> = new Map();
 
 const libManager: LibraryManager = new LibraryManager();
@@ -191,7 +191,10 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
     });
   }
 
-  docsToCompilerResults = {};
+  //  keep the document ref, but delete all the keys
+  Object.keys(docsToCompilerResults).forEach(key => {
+    delete docsToCompilerResults[key];
+  });
 
   const settings = await connection.workspace.getConfiguration("xeto");
 
@@ -419,27 +422,6 @@ connection.onDidChangeWatchedFiles((_change) => {
 const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
-function getIdentifierForPosition(doc: TextDocument, pos: Position): string {
-  let position = doc.offsetAt(pos) - 1;
-  const text = doc.getText();
-
-  // this is naive, but we go backwards until we reach a :
-  let identifier = "";
-
-  while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
-    identifier = text.charAt(position) + identifier;
-    position--;
-  }
-
-  if (position === -1) {
-    return "";
-  }
-
-  identifier = identifier.trim().replace(/[\n\t]/g, "");
-
-  return identifier;
-}
-
 function getIdentifierLength(doc: TextDocument, pos: Position): number {
   let position = doc.offsetAt(pos) - 1;
   let length = 0;
@@ -492,68 +474,7 @@ function getLargestIdentifierForPosition(
   return identifier.split(".");
 }
 
-function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
-  // let try to find the identifier for this position
-  const compiledDocument = docsToCompilerResults[params.textDocument.uri];
-  const doc = documents.get(params.textDocument.uri);
-
-  if (!compiledDocument || !doc) {
-    return [];
-  }
-
-  const partialIdentifier = getIdentifierForPosition(doc, params.position);
-
-  if (!partialIdentifier) {
-    return [];
-  }
-
-  let options =
-    (compiledDocument.root &&
-      findChildrenOf(partialIdentifier, compiledDocument.root)) ||
-    [];
-
-  //	maybe the identifier is from a lib
-  if (options.length === 0) {
-    let lib = null;
-    let currentSize = 1;
-    const parts = partialIdentifier.split(".");
-
-    //  libraries can contain dots in their names
-    do {
-      const libName = parts.slice(0, currentSize);
-
-      lib = libManager.getLib(libName.join("."));
-
-      if (lib) {
-        //	get compilers for files that have this lib
-        const identifierWithoutLib = parts.slice(currentSize).join(".");
-
-        options = findChildrenOf(identifierWithoutLib, lib.rootProto);
-        if (options.length) {
-          break;
-        }
-      }
-
-      currentSize ++;
-    } while(currentSize <= parts.length);
-  }
-
-  return options.map((op) => ({
-    label: op.label,
-    kind: CompletionItemKind.Field,
-    detail: op.parent,
-    documentation: op.doc,
-  }));
-}
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(handleAutoCompletion);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  return item;
-});
+addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
 function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
   // let try to find the identifier for this position
