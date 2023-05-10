@@ -7,9 +7,7 @@ import {
   Diagnostic,
   DiagnosticSeverity,
   InitializeParams,
-  DidChangeConfigurationNotification,
   InitializeResult,
-  DidChangeWatchedFilesNotification,
   HoverParams,
   Hover,
   DefinitionParams,
@@ -31,9 +29,6 @@ import { findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
   XetoLib,
-  loadSysLibsFromGH,
-  loadExtLibs,
-  ExtLibDef,
 } from "./libraries/";
 import {
   extractSemanticProtos,
@@ -47,7 +42,7 @@ import {
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
 
-import { generateInitResults } from "./init";
+import { generateInitResults, onInitialized } from "./init";
 
 import {
   getLargestIdentifierForPosition
@@ -69,7 +64,6 @@ const connection = createConnection(messageReader, messageWriter);
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
@@ -142,41 +136,13 @@ connection.onInitialize((params: InitializeParams) => {
 
   let result;
 
-  ({ hasConfigurationCapability, hasWorkspaceFolderCapability, result } = generateInitResults(params));
+  ({ hasConfigurationCapability, result } = generateInitResults(params));
 
   return result;
 });
 
 connection.onInitialized(async (): Promise<InitializeResult> => {
-  if (hasConfigurationCapability) {
-    // Register for all configuration changes.
-    connection.client.register(
-      DidChangeConfigurationNotification.type,
-      undefined
-    );
-    connection.client.register(
-      DidChangeWatchedFilesNotification.type,
-      undefined
-    );
-  }
-  if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-      connection.console.log("Workspace folder change event received.");
-    });
-  }
-
-  //  keep the document ref, but delete all the keys
-  Object.keys(docsToCompilerResults).forEach(key => {
-    delete docsToCompilerResults[key];
-  });
-
-  const settings = await connection.workspace.getConfiguration("xeto");
-
-  loadSysLibsFromGH(settings.libraries.sys, libManager);
-  loadExtLibs(
-    settings.libraries.external as (string | ExtLibDef)[],
-    libManager
-  );
+  onInitialized(connection, libManager, docsToCompilerResults);
 
   return {
     capabilities: {},
