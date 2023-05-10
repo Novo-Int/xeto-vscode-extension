@@ -4,8 +4,6 @@
 import {
   createConnection,
   TextDocuments,
-  Diagnostic,
-  DiagnosticSeverity,
   ProposedFeatures,
   InitializeParams,
   InitializeResult,
@@ -26,8 +24,6 @@ import { Position, TextDocument } from "vscode-languageserver-textdocument";
 import fs from "fs/promises";
 
 import { ProtoCompiler } from "./compiler/Compiler";
-import { CompilerError } from "./compiler/Errors";
-import { FileLoc } from "./compiler/FileLoc";
 import { Dirent } from "fs";
 import { Proto } from "./compiler/Proto";
 import { findProtoByQname } from "./FindProto";
@@ -53,8 +49,8 @@ import {
 } from "./capabilities/utils";
 
 import {
-  populateLibraryManager,
-  compilersToLibs
+  compilersToLibs,
+  parseDocument
 } from "./parseDocument";
 
 import {
@@ -127,7 +123,7 @@ const parseAllRootFolders = () => {
             await (await fs.readFile(file)).toString()
           );
 
-          parseDocument(textDocument);
+          parseDocument(textDocument, connection, libManager, docsToCompilerResults);
         });
     });
 };
@@ -150,7 +146,7 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 
 connection.onDidChangeConfiguration((change) => {
   // Revalidate all open text documents
-  documents.all().forEach(parseDocument);
+  documents.all().forEach((doc) => parseDocument(doc, connection, libManager, docsToCompilerResults));
 });
 
 // The content of a text document has changed. This event is emitted
@@ -158,76 +154,8 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidChangeContent((change) => {
   parseAllRootFolders();
 
-  parseDocument(change.document);
+  parseDocument(change.document, connection, libManager, docsToCompilerResults);
 });
-
-function isCompilerError(error: any): error is CompilerError {
-  return "type" in error;
-}
-
-function fileLocToDiagPosition(loc: FileLoc): Position {
-  return {
-    line: loc.line,
-    character: loc.col > 0 ? loc.col - 1 : loc.col,
-  };
-}
-
-async function parseDocument(textDocument: TextDocument): Promise<void> {
-  const diagnostics: Diagnostic[] = [];
-  const compiler = new ProtoCompiler(textDocument.uri);
-  const text = textDocument.getText();
-
-  // if no compiler is saved then save one
-  if (!docsToCompilerResults[textDocument.uri]) {
-    docsToCompilerResults[textDocument.uri] = compiler;
-  } else {
-    // if a compiler is already present
-    // only add a compiler if no errors are availabe
-    // TO DO - remove this logic and always add the current compiler when we have a resilient compiler
-    if (compiler.errs.length === 0) {
-      docsToCompilerResults[textDocument.uri] = compiler;
-    }
-  }
-
-  try {
-    compiler.run(text + "\0");
-    compiler.errs.forEach((err) => {
-      const diagnostic: Diagnostic = {
-        severity: DiagnosticSeverity.Error,
-        range: {
-          start: fileLocToDiagPosition(err.loc),
-          end: fileLocToDiagPosition(err.endLoc),
-        },
-        message: err.message,
-        //source: 'ex'
-      };
-
-      diagnostics.push(diagnostic);
-    });
-  } catch (e: unknown) {
-    if (isCompilerError(e)) {
-      const diagnostic: Diagnostic = {
-        severity: DiagnosticSeverity.Error,
-        range: {
-          start: textDocument.positionAt(e.loc.charIndex),
-          end: textDocument.positionAt(text.length),
-        },
-        message: e.message,
-        //source: 'ex'
-      };
-
-      diagnostics.push(diagnostic);
-    }
-  } finally {
-    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-    // time to add it to the library manager
-    populateLibraryManager(compiler, connection, libManager);
-
-    // resolve refs
-    compiler.root?.resolveRefTypes(compiler.root, libManager);
-  }
-  return;
-}
 
 connection.onDidChangeWatchedFiles((_change) => {
   // Monitored files have change in VSCode

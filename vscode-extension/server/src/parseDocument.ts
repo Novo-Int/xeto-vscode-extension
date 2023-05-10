@@ -1,7 +1,20 @@
-import { Connection } from "vscode-languageserver";
-import { isPartOfLib } from "./utils";
+import {
+  Connection,
+  Diagnostic,
+  DiagnosticSeverity,
+} from "vscode-languageserver";
+import { isCompilerError, isPartOfLib } from "./utils";
 import { ProtoCompiler } from "./compiler/Compiler";
-import { LibraryManager, XetoLib } from './libraries';
+import { LibraryManager, XetoLib } from "./libraries";
+import { Position, TextDocument } from "vscode-languageserver-textdocument";
+import { FileLoc } from "./compiler/FileLoc";
+
+function fileLocToDiagPosition(loc: FileLoc): Position {
+  return {
+    line: loc.line,
+    character: loc.col > 0 ? loc.col - 1 : loc.col,
+  };
+}
 
 export const populateLibraryManager = async (
   compiler: ProtoCompiler,
@@ -73,6 +86,68 @@ export const populateLibraryManager = async (
       xetoLib.addChild(name, proto);
     });
   }
+};
+
+export const parseDocument = async(
+  textDocument: TextDocument,
+  connection: Connection,
+  libManager: LibraryManager,
+  compiledDocs: Record<string, ProtoCompiler>
+): Promise<void> => {
+  const diagnostics: Diagnostic[] = [];
+  const compiler = new ProtoCompiler(textDocument.uri);
+  const text = textDocument.getText();
+
+  // if no compiler is saved then save one
+  if (!compiledDocs[textDocument.uri]) {
+    compiledDocs[textDocument.uri] = compiler;
+  } else {
+    // if a compiler is already present
+    // only add a compiler if no errors are availabe
+    // TO DO - remove this logic and always add the current compiler when we have a resilient compiler
+    if (compiler.errs.length === 0) {
+      compiledDocs[textDocument.uri] = compiler;
+    }
+  }
+
+  try {
+    compiler.run(text + "\0");
+    compiler.errs.forEach((err) => {
+      const diagnostic: Diagnostic = {
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: fileLocToDiagPosition(err.loc),
+          end: fileLocToDiagPosition(err.endLoc),
+        },
+        message: err.message,
+        //source: 'ex'
+      };
+
+      diagnostics.push(diagnostic);
+    });
+  } catch (e: unknown) {
+    if (isCompilerError(e)) {
+      const diagnostic: Diagnostic = {
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: textDocument.positionAt(e.loc.charIndex),
+          end: textDocument.positionAt(text.length),
+        },
+        message: e.message,
+        //source: 'ex'
+      };
+
+      diagnostics.push(diagnostic);
+    }
+  } finally {
+    connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+    // time to add it to the library manager
+    populateLibraryManager(compiler, connection, libManager);
+
+    // resolve refs
+    compiler.root?.resolveRefTypes(compiler.root, libManager);
+  }
+  return;
 };
 
 export const compilersToLibs: Map<ProtoCompiler, XetoLib> = new Map();

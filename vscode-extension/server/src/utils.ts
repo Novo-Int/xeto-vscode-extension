@@ -1,4 +1,5 @@
 import { Connection } from "vscode-languageserver";
+import { CompilerError } from "./compiler/Errors";
 
 export const VARS: {
   env: "BROWSER" | "NODE";
@@ -33,4 +34,8 @@ export const isPartOfLib = async (
 
     return false;
   }
+};
+
+export const isCompilerError = (error: any): error is CompilerError => {
+  return "type" in error;
 };
