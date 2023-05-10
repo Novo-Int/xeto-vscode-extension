@@ -152,50 +152,9 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
   };
 });
 
-// Xeto settings
-type ExtLibSetting = {
-  name: string;
-  files: string[];
-};
-interface XetoSettings {
-  libs: {
-    external: ExtLibSetting[];
-    system: string;
-  };
-}
-
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
-const defaultSettings: XetoSettings = {
-  libs: {
-    external: [],
-    system: "",
-  },
-};
-
-let globalSettings: XetoSettings = defaultSettings;
-
-// Cache the settings of all open documents
-const documentSettings: Map<string, Thenable<XetoSettings>> = new Map();
-
 connection.onDidChangeConfiguration((change) => {
-  if (hasConfigurationCapability) {
-    // Reset all cached document settings
-    documentSettings.clear();
-  } else {
-    globalSettings = <XetoSettings>(
-      (change.settings.languageServerExample || defaultSettings)
-    );
-  }
-
   // Revalidate all open text documents
   documents.all().forEach(parseDocument);
-});
-
-// Only keep settings for open documents
-documents.onDidClose((e) => {
-  documentSettings.delete(e.document.uri);
 });
 
 // The content of a text document has changed. This event is emitted
