@@ -18,6 +18,9 @@ import {
   DocumentFormattingParams,
 } from "vscode-languageserver/node";
 
+import { VARS, isPartOfLib } from './utils';
+VARS.env = "NODE";
+
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 
 import fs from "fs/promises";
@@ -219,18 +222,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
   }
 
   const split = compiler.sourceUri.split("/");
-  let hasLib = false;
-
-  try {
-    const stat = await fs.stat(
-      osPath.join(compiler.sourceUri.replace("file:/", ""), "..", "lib.xeto")
-    );
-    if (stat.isFile()) {
-      hasLib = true;
-    }
-  } catch {
-    return;
-  }
+  const hasLib = await isPartOfLib(compiler.sourceUri, connection);
 
   let libName: string | undefined = undefined;
   let libVersion = "";

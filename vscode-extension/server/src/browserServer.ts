@@ -19,6 +19,9 @@ import {
   BrowserMessageWriter
 } from "vscode-languageserver/browser";
 
+import { VARS, isPartOfLib } from './utils';
+VARS.env = "BROWSER";
+
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 
 import { ProtoCompiler } from "./compiler/Compiler";
@@ -221,7 +224,7 @@ async function populateLibraryManager(compiler: ProtoCompiler) {
 
   const split = compiler.sourceUri.split("/");
 
-  const hasLib = await connection.sendRequest('xfs/exists', {path: [...[...split].slice(0, -1), "lib.xeto"].join("/")});
+  const hasLib = await isPartOfLib(compiler.sourceUri, connection);
 
   let libName: string | undefined = undefined;
   let libVersion = "";
