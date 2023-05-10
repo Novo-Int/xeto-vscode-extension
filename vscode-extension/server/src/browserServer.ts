@@ -70,7 +70,6 @@ const connection = createConnection(messageReader, messageWriter);
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
-let hasConfigurationCapability = false;
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
@@ -140,11 +139,7 @@ connection.onInitialize((params: InitializeParams) => {
 
   parseAllRootFolders();
 
-  let result;
-
-  ({ hasConfigurationCapability, result } = generateInitResults(params));
-
-  return result;
+  return generateInitResults(params);
 });
 
 connection.onInitialized(async (): Promise<InitializeResult> => {

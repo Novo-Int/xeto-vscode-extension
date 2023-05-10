@@ -12,7 +12,7 @@ import {
   loadExtLibs,
   loadSysLibsFromGH,
 } from "./libraries";
-import { ProtoCompiler } from './compiler/Compiler';
+import { ProtoCompiler } from "./compiler/Compiler";
 
 let hasWorkspaceFolderCapability = false;
 let hasConfigurationCapability = false;
@@ -51,10 +51,7 @@ export const generateInitResults = (params: InitializeParams) => {
       },
     };
   }
-  return {
-    result,
-    hasConfigurationCapability,
-  };
+  return result;
 };
 
 export const onInitialized = async (
