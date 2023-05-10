@@ -19,7 +19,7 @@ import {
   BrowserMessageWriter
 } from "vscode-languageserver/browser";
 
-import { VARS, isPartOfLib } from './utils';
+import { VARS } from './utils';
 VARS.env = "BROWSER";
 
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
@@ -31,7 +31,6 @@ import { Proto } from "./compiler/Proto";
 import { findProtoByQname } from "./FindProto";
 import {
   LibraryManager,
-  XetoLib,
 } from "./libraries/";
 import {
   extractSemanticProtos,
@@ -52,6 +51,11 @@ import {
 } from "./capabilities/utils";
 
 import {
+  populateLibraryManager,
+  compilersToLibs
+} from "./parseDocument";
+
+import {
   addAutoCompletion,
   addRenameSymbol
 } from "./capabilities";
@@ -70,7 +74,6 @@ let hasConfigurationCapability = false;
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
-const compilersToLibs: Map<ProtoCompiler, XetoLib> = new Map();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -176,74 +179,6 @@ function fileLocToDiagPosition(loc: FileLoc): Position {
   };
 }
 
-async function populateLibraryManager(compiler: ProtoCompiler) {
-  if (!compiler.root) {
-    return;
-  }
-
-  const split = compiler.sourceUri.split("/");
-
-  const hasLib = await isPartOfLib(compiler.sourceUri, connection);
-
-  let libName: string | undefined = undefined;
-  let libVersion = "";
-  let libDoc = "";
-  const deps: string[] = [];
-
-  if (hasLib) {
-    libName = split[split.length - 2];
-  }
-
-  const isLibMeta = compiler.sourceUri.endsWith("lib.xeto");
-
-  if (isLibMeta) {
-    const pragma = compiler.root?.children["pragma"];
-
-    libName = split[split.length - 2];
-    libVersion = pragma?.children._version.type;
-    libDoc = pragma?.doc || "";
-
-    const protoDeps = pragma?.children._depends?.children;
-
-    protoDeps &&
-      Object.keys(protoDeps).forEach((key) => {
-        if (key.startsWith("#")) {
-          return;
-        }
-
-        deps.push(protoDeps[key].children.lib.type);
-      });
-  }
-
-  if (!libName) {
-    return;
-  }
-
-  if (!libManager.getLib(libName)) {
-    libManager.addLib(
-      new XetoLib(libName, libVersion, compiler.sourceUri, libDoc)
-    );
-  }
-
-  const xetoLib = libManager.getLib(libName);
-
-  if (!xetoLib) {
-    return;
-  }
-
-  compilersToLibs.set(compiler, xetoLib);
-
-  if (libVersion) {
-    xetoLib.addMeta(libVersion, libDoc, deps);
-  }
-
-  if (!isLibMeta) {
-    Object.entries(compiler.root.children).forEach(([name, proto]) => {
-      xetoLib.addChild(name, proto);
-    });
-  }
-}
-
 async function parseDocument(textDocument: TextDocument): Promise<void> {
   const diagnostics: Diagnostic[] = [];
   const compiler = new ProtoCompiler(textDocument.uri);
@@ -293,7 +228,7 @@ async function parseDocument(textDocument: TextDocument): Promise<void> {
   } finally {
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
     // time to add it to the library manager
-    populateLibraryManager(compiler);
+    populateLibraryManager(compiler, connection, libManager);
 
     // resolve refs
     compiler.root?.resolveRefTypes(compiler.root, libManager);

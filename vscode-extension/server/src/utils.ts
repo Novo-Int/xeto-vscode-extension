@@ -11,7 +11,7 @@ export const isPartOfLib = async (
   connection: Connection
 ): Promise<boolean> => {
   if (VARS.env === "BROWSER") {
-	const split = path.split("/");
+    const split = path.split("/");
 
     return connection.sendRequest("xfs/exists", {
       path: [...[...split].slice(0, -1), "lib.xeto"].join("/"),
@@ -31,6 +31,6 @@ export const isPartOfLib = async (
       return false;
     }
 
-	return false;
+    return false;
   }
 };
