@@ -69,7 +69,6 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 let rootFolders: string[] = [];
 
 let docsToCompilerResults: Record<string, ProtoCompiler> = {};
@@ -148,11 +147,6 @@ connection.onInitialize((params: InitializeParams) => {
   );
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
-  hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
   );
 
   const result: InitializeResult = {
@@ -253,21 +247,6 @@ connection.onDidChangeConfiguration((change) => {
   // Revalidate all open text documents
   documents.all().forEach(parseDocument);
 });
-
-function getDocumentSettings(resource: string): Thenable<XetoSettings> {
-  if (!hasConfigurationCapability) {
-    return Promise.resolve(globalSettings);
-  }
-  let result = documentSettings.get(resource);
-  if (!result) {
-    result = connection.workspace.getConfiguration({
-      scopeUri: resource,
-      section: "xeto",
-    });
-    documentSettings.set(resource, result);
-  }
-  return result;
-}
 
 // Only keep settings for open documents
 documents.onDidClose((e) => {

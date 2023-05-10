@@ -252,21 +252,6 @@ connection.onDidChangeConfiguration((change) => {
   documents.all().forEach(parseDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<XetoSettings> {
-  if (!hasConfigurationCapability) {
-    return Promise.resolve(globalSettings);
-  }
-  let result = documentSettings.get(resource);
-  if (!result) {
-    result = connection.workspace.getConfiguration({
-      scopeUri: resource,
-      section: "xeto",
-    });
-    documentSettings.set(resource, result);
-  }
-  return result;
-}
-
 // Only keep settings for open documents
 documents.onDidClose((e) => {
   documentSettings.delete(e.document.uri);
