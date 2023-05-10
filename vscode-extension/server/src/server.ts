@@ -51,6 +51,8 @@ import {
 import { formatFile } from "./formatting";
 import { generateSymbols } from "./symbols";
 
+import { generateInitResults } from "./init";
+
 import {
   getLargestIdentifierForPosition
 } from "./capabilities/utils";
@@ -138,39 +140,10 @@ connection.onInitialize((params: InitializeParams) => {
 
   parseAllRootFolders();
 
-  const capabilities = params.capabilities;
+  let result;
 
-  // Does the client support the `workspace/configuration` request?
-  // If not, we fall back using global settings.
-  hasConfigurationCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.configuration
-  );
-  hasWorkspaceFolderCapability = !!(
-    capabilities.workspace && !!capabilities.workspace.workspaceFolders
-  );
+  ({ hasConfigurationCapability, hasWorkspaceFolderCapability, result } = generateInitResults(params));
 
-  const result: InitializeResult = {
-    capabilities: {
-      textDocumentSync: TextDocumentSyncKind.Incremental,
-      hoverProvider: true,
-      definitionProvider: true,
-      documentFormattingProvider: true,
-      documentSymbolProvider: true,
-      renameProvider: true,
-      // Tell the client that this server supports code completion.
-      completionProvider: {
-        resolveProvider: true,
-        triggerCharacters: ["."],
-      },
-    },
-  };
-  if (hasWorkspaceFolderCapability) {
-    result.capabilities.workspace = {
-      workspaceFolders: {
-        supported: true,
-      },
-    };
-  }
   return result;
 });
 
