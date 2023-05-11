@@ -123,7 +123,7 @@ const parseAllRootFolders = () => {
 
 
 connection.onInitialize((params: InitializeParams) => {
-  rootFolders = getRootFolderFromParams(params);
+  rootFolders = getRootFolderFromParams(params).map(str => str.replace(/\/$/,""));
 
   parseAllRootFolders();
 
