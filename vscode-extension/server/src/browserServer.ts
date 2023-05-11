@@ -31,12 +31,6 @@ import {
   extractSemanticProtos,
   convertProtosToSemanticTokens,
 } from "./semantic-tokens";
-import {
-  DocumentSymbol,
-  DocumentSymbolParams,
-} from "vscode-languageserver";
-
-import { generateSymbols } from "./symbols";
 
 import { generateInitResults, onInitialized } from "./init";
 
@@ -52,7 +46,8 @@ import {
 import {
   addAutoCompletion,
   addRenameSymbol,
-  addFormatting
+  addFormatting,
+  addSymbols
 } from "./capabilities";
 
 const messageReader = new BrowserMessageReader(self);
@@ -263,28 +258,7 @@ function handleSemanticTokens(params: SemanticTokensParams): SemanticTokens {
 
 connection.languages.semanticTokens.on(handleSemanticTokens);
 
-function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
-  const uri = params.textDocument.uri;
-
-  if (!uri) {
-    return [];
-  }
-  const compiler = docsToCompilerResults[uri];
-
-  if (!compiler) {
-    return [];
-  }
-
-  const root = compiler.root;
-
-  if (!root) {
-    return [];
-  }
-
-  return generateSymbols(root);
-}
-
-connection.onDocumentSymbol(onDocumentSymbols);
+addSymbols(connection, docsToCompilerResults);
 
 addFormatting(connection, documents, docsToCompilerResults);
 
