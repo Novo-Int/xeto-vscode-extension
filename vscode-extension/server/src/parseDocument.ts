@@ -88,7 +88,7 @@ export const populateLibraryManager = async (
   }
 };
 
-export const parseDocument = async(
+export const parseDocument = async (
   textDocument: TextDocument,
   connection: Connection,
   libManager: LibraryManager,

@@ -12,7 +12,6 @@ import {
   Definition,
   SemanticTokensParams,
   SemanticTokens,
-  DocumentFormattingParams,
   BrowserMessageReader,
   BrowserMessageWriter
 } from "vscode-languageserver/browser";
@@ -35,9 +34,8 @@ import {
 import {
   DocumentSymbol,
   DocumentSymbolParams,
-  TextEdit,
 } from "vscode-languageserver";
-import { formatFile } from "./formatting";
+
 import { generateSymbols } from "./symbols";
 
 import { generateInitResults, onInitialized } from "./init";
@@ -53,7 +51,8 @@ import {
 
 import {
   addAutoCompletion,
-  addRenameSymbol
+  addRenameSymbol,
+  addFormatting
 } from "./capabilities";
 
 const messageReader = new BrowserMessageReader(self);
@@ -287,31 +286,7 @@ function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
 
 connection.onDocumentSymbol(onDocumentSymbols);
 
-function onDocumentFormatting(params: DocumentFormattingParams): TextEdit[] {
-  const uri = params.textDocument.uri;
-
-  const compiler = docsToCompilerResults[uri];
-
-  if (!compiler) {
-    return [];
-  }
-
-  const tokenBag = compiler.tokenBag;
-
-  if (!tokenBag || !tokenBag.length) {
-    return [];
-  }
-
-  const doc = documents.get(uri);
-
-  if (!doc) {
-    return [];
-  }
-
-  return formatFile(doc, tokenBag, params.options);
-}
-
-connection.onDocumentFormatting(onDocumentFormatting);
+addFormatting(connection, documents, docsToCompilerResults);
 
 addRenameSymbol(connection, docsToCompilerResults, documents, compilersToLibs);
 
