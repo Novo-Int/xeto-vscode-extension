@@ -36,6 +36,7 @@ export const generateInitResults = (params: InitializeParams) => {
       definitionProvider: true,
       documentFormattingProvider: true,
       documentSymbolProvider: true,
+      workspaceSymbolProvider: true,
       renameProvider: true,
       // Tell the client that this server supports code completion.
       completionProvider: {
