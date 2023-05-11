@@ -69,8 +69,6 @@ const libManager: LibraryManager = new LibraryManager();
 const getRootFolderFromParams = (params: InitializeParams): string[] => {
   let ret = "";
 
-  connection.workspace.getWorkspaceFolders();
-
   if (params.workspaceFolders) {
     return params.workspaceFolders.map((folder) =>
       folder.uri.replace("file://", "")
