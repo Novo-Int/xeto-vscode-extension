@@ -6,12 +6,6 @@ import {
   TextDocuments,
   InitializeParams,
   InitializeResult,
-  HoverParams,
-  Hover,
-  DefinitionParams,
-  Definition,
-  SemanticTokensParams,
-  SemanticTokens,
   BrowserMessageReader,
   BrowserMessageWriter
 } from "vscode-languageserver/browser";
@@ -19,24 +13,15 @@ import {
 import { VARS } from './utils';
 VARS.env = "BROWSER";
 
-import { Position, TextDocument } from "vscode-languageserver-textdocument";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { ProtoCompiler } from "./compiler/Compiler";
-import { Proto } from "./compiler/Proto";
-import { findProtoByQname } from "./FindProto";
+
 import {
   LibraryManager,
 } from "./libraries/";
-import {
-  extractSemanticProtos,
-  convertProtosToSemanticTokens,
-} from "./semantic-tokens";
 
 import { generateInitResults, onInitialized } from "./init";
-
-import {
-  getLargestIdentifierForPosition
-} from "./capabilities/utils";
 
 import {
   compilersToLibs,
@@ -47,7 +32,10 @@ import {
   addAutoCompletion,
   addRenameSymbol,
   addFormatting,
-  addSymbols
+  addSymbols,
+  addSemanticTokens,
+  addDefinition,
+  addHover
 } from "./capabilities";
 
 const messageReader = new BrowserMessageReader(self);
@@ -158,103 +146,11 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-function getProtoFromFileLoc(uri: string, pos: Position): Proto | null {
-  // let try to find the identifier for this position
-  const compiledDocument = docsToCompilerResults[uri];
-  const doc = documents.get(uri);
+addHover(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
 
-  if (!compiledDocument || !doc) {
-    return null;
-  }
+addDefinition(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
 
-  const identifier = getLargestIdentifierForPosition(doc, pos);
-
-  if (!identifier) {
-    return null;
-  }
-
-  const proto =
-    compiledDocument.root &&
-    findProtoByQname(identifier.join("."), compiledDocument.root);
-
-  if (proto) {
-    return proto;
-  } else {
-    // 	search in the files lib first
-    const lib = compilersToLibs.get(compiledDocument);
-
-    if (lib) {
-      const proto = findProtoByQname(identifier.join("."), lib.rootProto);
-
-      if (proto) {
-        return proto;
-      }
-    }
-
-    const proto = libManager.findProtoByQName(identifier.join("."), lib?.deps);
-
-    return proto;
-  }
-}
-
-function handleHover(params: HoverParams): Hover | null {
-  const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
-
-  if (!proto) {
-    return null;
-  }
-
-  return {
-    contents: proto.doc || "",
-  };
-}
-
-connection.onHover(handleHover);
-
-function handleDefinition(params: DefinitionParams): Definition | null {
-  const proto = getProtoFromFileLoc(params.textDocument.uri, params.position);
-
-  if (!proto || !proto.loc) {
-    return null;
-  }
-
-  return {
-    uri: proto.loc.file,
-    range: {
-      start: {
-        line: proto.loc.line,
-        character: proto.loc.col,
-      },
-      end: {
-        line: proto.loc.line,
-        character: proto.loc.col + 1,
-      },
-    },
-  };
-}
-
-connection.onDefinition(handleDefinition);
-
-function handleSemanticTokens(params: SemanticTokensParams): SemanticTokens {
-  const uri = params.textDocument.uri;
-
-  const compiler = docsToCompilerResults[uri];
-
-  if (!compiler || !compiler.root) {
-    return {
-      data: [],
-    };
-  }
-
-  const semanticProtos = extractSemanticProtos(compiler.root, libManager);
-  const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
-
-  return {
-    data: semanticTokens,
-  };
-}
-
-connection.languages.semanticTokens.on(handleSemanticTokens);
+addSemanticTokens(connection, libManager, docsToCompilerResults);
 
 addSymbols(connection, docsToCompilerResults);
 

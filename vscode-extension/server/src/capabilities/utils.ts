@@ -1,4 +1,9 @@
 import { TextDocument, Position } from "vscode-languageserver-textdocument";
+import { findProtoByQname } from '../FindProto';
+import { Proto } from '../compiler/Proto';
+import { ProtoCompiler } from '../compiler/Compiler';
+import { TextDocuments } from 'vscode-languageserver';
+import { LibraryManager, XetoLib } from '../libraries';
 
 const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
@@ -77,4 +82,52 @@ export function getLargestIdentifierForPosition(
   identifier = identifier.trim().replace(/[\n\t]/g, "");
 
   return identifier.split(".");
+}
+
+type ProtoFromLocInput = {
+	uri: string,
+	pos: Position,
+	compiledDocs: Record<string, ProtoCompiler>,
+	documents: TextDocuments<TextDocument>,
+	compilersToLibs: Map<ProtoCompiler, XetoLib>
+	libManager: LibraryManager
+}
+
+export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
+  // let try to find the identifier for this position
+  const compiledDocument = input.compiledDocs[input.uri];
+  const doc = input.documents.get(input.uri);
+
+  if (!compiledDocument || !doc) {
+    return null;
+  }
+
+  const identifier = getLargestIdentifierForPosition(doc, input.pos);
+
+  if (!identifier) {
+    return null;
+  }
+
+  const proto =
+    compiledDocument.root &&
+    findProtoByQname(identifier.join("."), compiledDocument.root);
+
+  if (proto) {
+    return proto;
+  } else {
+    // 	search in the files lib first
+    const lib = input.compilersToLibs.get(compiledDocument);
+
+    if (lib) {
+      const proto = findProtoByQname(identifier.join("."), lib.rootProto);
+
+      if (proto) {
+        return proto;
+      }
+    }
+
+    const proto = input.libManager.findProtoByQName(identifier.join("."), lib?.deps);
+
+    return proto;
+  }
 }
