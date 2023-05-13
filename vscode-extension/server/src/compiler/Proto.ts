@@ -24,6 +24,7 @@ export class Proto {
 	public readonly name: string;
 	public readonly type: string;
 	public readonly loc: FileLoc;
+	public initialType = "";
 
 	//	alias link to another Proto
 	public get refType () {
@@ -43,7 +44,7 @@ export class Proto {
 		this.loc = loc;
 	}
 
-	public resolveRefTypes(root: Proto, libManager: LibraryManager) {
+	public resolveRefTypes(root: Proto, libManager: LibraryManager, missingRefs: Proto[]) {
 		if (this.hasRefType) {
 			let currentAlias = findProtoByQname(this.type, root);
 
@@ -53,18 +54,24 @@ export class Proto {
 			}
 
 			this._refType = currentAlias || undefined;
+
+			if (this._refType?.name === undefined && this.initialType === "sys.Ref") {
+				missingRefs.push(this);
+			}
 		}
 
 		// go deep
 		Object
 			.values(this.children)
-			.forEach(proto => proto.resolveRefTypes(root, libManager));
+			.forEach(proto => proto.resolveRefTypes(root, libManager, missingRefs));
 	}
 
 	private static fromPartialAST(name: string, ast: Record<string, any>): Proto {
 		//	we add _ for meta names so we'll remove it here
 		const originalName = name.startsWith('_') ? name.substring(1) : name;
 		const proto = new Proto(originalName, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
+
+		proto.initialType = ast._type;
 
 		Object.keys(ast)
 			.filter(key => !metaPropsNotToParse[key] && typeof ast[key] !== 'string')

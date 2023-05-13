@@ -220,6 +220,7 @@ export class Parser {
     if (this.cur === Token.QUESTION) return this.parseIsMaybe(p, qname);
 
     p.traits["_is"] = qname;
+    p.traits["_type"] = "sys.Ref";
 
     return true;
   }

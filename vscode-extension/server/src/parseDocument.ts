@@ -8,6 +8,7 @@ import { ProtoCompiler } from "./compiler/Compiler";
 import { LibraryManager, XetoLib } from "./libraries";
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 import { FileLoc } from "./compiler/FileLoc";
+import { Proto } from './compiler/Proto';
 
 function fileLocToDiagPosition(loc: FileLoc): Position {
   return {
@@ -145,7 +146,8 @@ export const parseDocument = async (
     populateLibraryManager(compiler, connection, libManager);
 
     // resolve refs
-    compiler.root?.resolveRefTypes(compiler.root, libManager);
+	const missingRefs: Proto[] = [];
+    compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
   }
   return;
 };
