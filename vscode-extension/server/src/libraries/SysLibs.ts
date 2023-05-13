@@ -1,4 +1,5 @@
 import { ProtoCompiler } from '../compiler/Compiler';
+import { EVENT_TYPE, eventBus } from '../events';
 import { LibraryManager } from './LibManager';
 import { XetoLib } from './XetoLib';
 
@@ -24,6 +25,7 @@ const librariesToAdd = [ {
 
 const processSysLibNo = async (baseURL: string, lm: LibraryManager, index: number): Promise<void> => {
 	if (index >= librariesToAdd.length) {
+		eventBus.fire(EVENT_TYPE.SYS_LIBS_LOADED);
 		return;
 	}
 

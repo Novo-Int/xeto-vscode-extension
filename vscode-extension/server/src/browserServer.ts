@@ -37,6 +37,7 @@ import {
   addDefinition,
   addHover
 } from "./capabilities";
+import { EVENT_TYPE, eventBus } from './events';
 
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
@@ -87,6 +88,8 @@ const addWorkspaceRootToWatch = async (path: string, storage: string[] = []) => 
 };
 
 const parseAllRootFolders = () => {
+  let noLoaded = 0;
+
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach(async (folderPath) => {
@@ -105,6 +108,11 @@ const parseAllRootFolders = () => {
           );
 
           parseDocument(textDocument, connection, libManager, docsToCompilerResults);
+
+          noLoaded ++;
+          if (noLoaded >= rootFolders.filter(Boolean).length) {
+            eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+          }
         });
     });
 };

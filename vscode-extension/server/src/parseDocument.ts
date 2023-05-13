@@ -3,12 +3,28 @@ import {
   Diagnostic,
   DiagnosticSeverity,
 } from "vscode-languageserver";
+import { eventBus, EVENT_TYPE } from "./events";
 import { isCompilerError, isPartOfLib } from "./utils";
 import { ProtoCompiler } from "./compiler/Compiler";
 import { LibraryManager, XetoLib } from "./libraries";
 import { Position, TextDocument } from "vscode-languageserver-textdocument";
 import { FileLoc } from "./compiler/FileLoc";
-import { Proto } from './compiler/Proto';
+import { Proto } from "./compiler/Proto";
+
+let ARE_LIBS_LOADED = false;
+let noLoaded = 0;
+
+const libsLoadedCallback = () => {
+	noLoaded ++;
+
+	if (noLoaded === 3) {
+		ARE_LIBS_LOADED = true;
+	}
+};
+
+eventBus.addListener(EVENT_TYPE.EXTERNAL_LIBS_LOADED, libsLoadedCallback);
+eventBus.addListener(EVENT_TYPE.SYS_LIBS_LOADED, libsLoadedCallback);
+eventBus.addListener(EVENT_TYPE.WORKSPACE_SCANNED, libsLoadedCallback);
 
 function fileLocToDiagPosition(loc: FileLoc): Position {
   return {
@@ -141,13 +157,26 @@ export const parseDocument = async (
       diagnostics.push(diagnostic);
     }
   } finally {
+	if (ARE_LIBS_LOADED) {
+		// resolve refs
+		const missingRefs: Proto[] = [];
+		compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
+
+		const missingRefsDiagnostics = missingRefs.map(proto => ({
+			severity: DiagnosticSeverity.Error,
+			range: {
+				start: textDocument.positionAt(proto.loc.charIndex),
+				end: textDocument.positionAt(proto.loc.charIndex + proto.type.length)
+			},
+			message: 'No available definition for this proto'
+		}));
+
+		diagnostics.push(...missingRefsDiagnostics);
+	}
+
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
     // time to add it to the library manager
     populateLibraryManager(compiler, connection, libManager);
-
-    // resolve refs
-	const missingRefs: Proto[] = [];
-    compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
   }
   return;
 };

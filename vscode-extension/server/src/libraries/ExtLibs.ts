@@ -5,6 +5,7 @@ import { readUrl } from "./utils";
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { EVENT_TYPE, eventBus } from '../events';
 
 const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
   try {
@@ -134,6 +135,8 @@ export const loadExtLibs = (
       console.log(e);
     }
   });
+
+  eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
 };
 
 export type ExtLibDef = {
