@@ -7,6 +7,7 @@ const metaPropsNotToParse: Record<string, boolean> = {
 	'_loc': true,
 	'_doc': true,
 	'_val': true,
+	'_qnameLoc': true,
 };
 
 export class Proto {
@@ -24,6 +25,7 @@ export class Proto {
 	public readonly name: string;
 	public readonly type: string;
 	public readonly loc: FileLoc;
+	public qnameLoc = 0;
 	public initialType = "";
 
 	//	alias link to another Proto
@@ -72,6 +74,11 @@ export class Proto {
 		const proto = new Proto(originalName, ast._is || ast._val, ast._loc?._val, ast._doc?._val);
 
 		proto.initialType = ast._type;
+
+		//	it we have the start of the qname
+		if (ast._qnameLoc) {
+			proto.qnameLoc = ast._qnameLoc;
+		}
 
 		Object.keys(ast)
 			.filter(key => !metaPropsNotToParse[key] && typeof ast[key] !== 'string')

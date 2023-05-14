@@ -213,6 +213,7 @@ export class Parser {
 
     if (this.cur !== Token.ID) return false;
 
+    const qnameLoc = this.curCharIndex - 1;
     const qname = this.consumeQName();
 
     if (this.cur === Token.AMP)      return this.parseIsAnd(p, qname);
@@ -221,6 +222,7 @@ export class Parser {
 
     p.traits["_is"] = qname;
     p.traits["_type"] = "sys.Ref";
+    p.traits["_qnameLoc"] = qnameLoc;
 
     return true;
   }
