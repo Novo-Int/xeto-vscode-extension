@@ -2,7 +2,7 @@
 	"name": "xeto-lsp",
 	"description": "Xeto LSP for VSCode",
 	"version": "0.1.6",
-	"author": "",
+	"author": "Novo Studio",
 	"license": "BSD-3",
 	"engines": {
 		"node": "*",

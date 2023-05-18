@@ -2,7 +2,7 @@
 	"name": "xeto-extension",
 	"description": "A xeto extension",
 	"displayName": "Xeto",
-	"license": "MIT",
+	"license": "BSD-3",
 	"version": "0.1.22",
 	"categories": [],
 	"keywords": [
