@@ -1,15 +1,109 @@
 {
-  "name": "xeto",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "cd vscode-extension && tsc -b -w"
-  },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "typescript": "^4.8.4"
-  }
+	"name": "xeto-extension",
+	"description": "A xeto extension",
+	"displayName": "Xeto",
+	"license": "BSD-3",
+	"version": "0.1.22",
+	"categories": [],
+	"keywords": [
+		"multi-root ready"
+	],
+	"publisher": "novo-studio",
+	"repository": {
+		"url": "https://github.com/Novo-Int/pog-vscode-extension"
+	},
+	"engines": {
+		"vscode": "^1.73.0"
+	},
+	"activationEvents": [
+		"onLanguage:xeto"
+	],
+	"main": "./client/out/extension",
+	"browser": "./client/dist/browserClientMain",
+	"contributes": {
+		"languages": [
+			{
+				"id": "xeto",
+				"extensions": [
+					".xeto"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "xeto",
+				"scopeName": "source.xeto",
+				"path": "./syntaxes/xeto.tmLanguage.json"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Xeto",
+			"properties": {
+				"xeto.libraries.sys": {
+					"type": "string",
+					"default": "2bbf12983eda97fb1e22de80e8356c91fd1ae881",
+					"markdownDescription": "Specifies the GIT **sha** for the desired version of sys libraries. The content of the libraries will be download from GH based on the provided **sha**."
+				},
+				"xeto.libraries.external": {
+					"type": "array",
+					"default": [],
+					"markdownDescription": "A list of locations for external libraries.\nThe entries can be either: \n* strings\n   * this needs to be a path to the local file system that vscode can access\n  * if the folder contains a **lib.xeto** file then it is treated as a single library\n  * if **lib.xeto** is missing, then each folder (just one level deep) is searched and considered a lib if **lib.xeto** exists\n  * anything else is ignored\n* an object that describes the desired library. This is mostly used for **URLs**. The object should have the following structure\n   * **name**: name of the lib\n   * **lib**: URL path to **lib.xeto** file. Version and docs will be read from this\n   * **files**: a string array with the URL to all the files of the lib\n\n Example of a lib entry: \n \n{\n \"name\": \"fakelib\",\n \"lib\": \"https://ex.com/fakelib/lib.xeto\",\n  \"files\": [\n   \"https://ex.com/fakelib/meta.xeto\"\n   \"https://ex.com/fakelib/tags.xeto\"\n ]\n}\n \nIn case of name clashing libraries at **the top** of the array take precedence over libraries of the same name but **lower** in the array."
+				}
+			}
+		},
+		"configurationDefaults": {
+			"[xeto]": {
+				"editor.semanticHighlighting.enabled": true
+			},
+			"editor.semanticTokenColorCustomizations": {
+				"enabled": true,
+				"rules": {
+					"label": {
+						"foreground": "#0cd319",
+						"bold": true,
+						"underline": true
+					}
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b && webpack --mode production --devtool hidden-source-map",
+		"compile-web": "webpack --devtool hidden-source-map",
+		"watch": "tsc -b -w",
+		"lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"test": "sh ./scripts/e2e.sh",
+		"deploy": "vsce publish",
+		"test-web": "npm run compile-web && vscode-test-web --browserType=chromium --verbose --extensionDevelopmentPath=. ./web-test-data"
+	},
+	"devDependencies": {
+		"@types/mocha": "^9.1.0",
+		"@types/node": "^16.18.23",
+		"@typescript-eslint/eslint-plugin": "^5.42.0",
+		"@typescript-eslint/parser": "^5.42.0",
+		"@vscode/test-web": "^0.0.42",
+		"@vscode/vsce": "^2.16.0",
+		"buffer": "^6.0.3",
+		"eslint": "^8.26.0",
+		"mocha": "^9.2.1",
+		"path-browserify": "^1.0.1",
+		"ts-loader": "^9.4.2",
+		"typescript": "^4.8.4",
+		"webpack": "^5.79.0",
+		"webpack-cli": "^5.0.1"
+	},
+	"dependencies": {
+		"assert": "^2.0.0",
+		"constants-browserify": "^1.0.0",
+		"fs": "^0.0.1-security",
+		"https-browserify": "^1.0.0",
+		"process": "^0.11.10",
+		"stream-browserify": "^3.0.0",
+		"stream-http": "^3.2.0",
+		"url": "^0.11.0"
+	}
 }
