@@ -2,6 +2,7 @@ build/**
 node_modules/**
 **/dist/**
 .vscode-test-web/**
+.vscode-test/**
 **/node_modules/**
 server/out/**
 client/out/**
