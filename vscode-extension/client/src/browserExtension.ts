@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------------------------------
-  * Copyright (c) Novi-Studio
+  * Copyright (c) Novo Studio
  *--------------------------------------------------------------------------------------------*/
 
 import { ExtensionContext, Uri, workspace, SemanticTokensLegend, languages } from 'vscode';
