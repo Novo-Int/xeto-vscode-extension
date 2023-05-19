@@ -4,16 +4,28 @@
         "es2021": true,
         "node": true
     },
-    "extends": ["standard-with-typescript", "prettier"],
-    "overrides": [
+    "extends": [
+        "standard-with-typescript",
+        "prettier"
     ],
-    "plugins": ["prettier"],
+    "overrides": [],
+    "plugins": [
+        "prettier"
+    ],
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module",
-        "project": ["./client/tsconfig.json", "./server/tsconfig.json"]
+        "project": [
+            "./client/tsconfig.json",
+            "./server/tsconfig.json"
+        ]
     },
     "rules": {
-        "prettier/prettier": ["error"]
+        "prettier/prettier": [
+            "error"
+        ],
+        "@typescript-eslint/strict-boolean-expressions": [
+            "off"
+        ]
     }
 }
