@@ -10,7 +10,7 @@
 	],
 	"publisher": "novo-studio",
 	"repository": {
-		"url": "https://github.com/Novo-Int/pog-vscode-extension"
+		"url": "https://github.com/Novo-Int/xeto-vscode-extension"
 	},
 	"engines": {
 		"vscode": "^1.73.0"
