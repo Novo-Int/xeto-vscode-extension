@@ -1,27 +1,31 @@
-import * as vscode from 'vscode';
+import type * as vscode from "vscode";
 
-import {
-	LanguageClient,
-} from 'vscode-languageclient/node';
+import { type LanguageClient } from "vscode-languageclient/node";
 
-import {
-	LanguageClient as BrowserLanguageClient
-} from 'vscode-languageclient/browser';
+import { type LanguageClient as BrowserLanguageClient } from "vscode-languageclient/browser";
 
-export default class XetoSemanticTokenProvider implements vscode.DocumentSemanticTokensProvider {
-	private _client: LanguageClient | BrowserLanguageClient;
+export default class XetoSemanticTokenProvider
+  implements vscode.DocumentSemanticTokensProvider
+{
+  private readonly _client: LanguageClient | BrowserLanguageClient;
 
-	constructor (client: LanguageClient | BrowserLanguageClient) {
-		this._client = client;
-	}
+  constructor(client: LanguageClient | BrowserLanguageClient) {
+    this._client = client;
+  }
 
-	async provideDocumentSemanticTokens(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.SemanticTokens> {
-		const results = await this._client.sendRequest('textDocument/semanticTokens/full', {
-			textDocument: {
-				uri: document.uri.toString()
-			}
-		});
+  async provideDocumentSemanticTokens(
+    document: vscode.TextDocument,
+    token: vscode.CancellationToken
+  ): Promise<vscode.SemanticTokens> {
+    const results = await this._client.sendRequest(
+      "textDocument/semanticTokens/full",
+      {
+        textDocument: {
+          uri: document.uri.toString(),
+        },
+      }
+    );
 
-		return results as vscode.SemanticTokens;
-	}
+    return results as vscode.SemanticTokens;
+  }
 }
