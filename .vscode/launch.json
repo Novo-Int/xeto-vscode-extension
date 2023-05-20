@@ -7,7 +7,7 @@
 			"request": "launch",
 			"name": "Launch Client",
 			"runtimeExecutable": "${execPath}",
-			"args": ["--extensionDevelopmentPath=${workspaceRoot}/vscode-extension"],
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
 			"outFiles": ["${workspaceRoot}/vscode-extension/client/out/**/*.js"],
 			"preLaunchTask": {
 				"type": "npm",
@@ -20,7 +20,7 @@
 			"name": "Attach to Server",
 			"port": 6009,
 			"restart": true,
-			"outFiles": ["${workspaceRoot}/server/vscode-extension/out/**/*.js"]
+			"outFiles": ["${workspaceRoot}/server/out/**/*.js"]
 		},
 		{
 			"name": "Language Server E2E Test",
