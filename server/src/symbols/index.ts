@@ -1,11 +1,11 @@
-import { DocumentSymbol, SymbolKind } from "vscode-languageserver";
-import { Proto } from "../compiler/Proto";
+import { type DocumentSymbol, SymbolKind } from "vscode-languageserver";
+import { type Proto } from "../compiler/Proto";
 
 const isProtoArray = (p: Proto): boolean => {
   try {
     return Object.keys(p.children)
       .map((key) => parseInt(key.substring(1)))
-      .every((k) => isNaN(k) === false);
+      .every((k) => !isNaN(k));
   } catch {
     return false;
   }
@@ -30,9 +30,7 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.refType?.name === "Bool" ||
     p.type === "Bool" ||
     p.type === "sys.Bool" ||
-    (p.type === "sys.Maybe" &&
-      p.children["_of"] &&
-      p.children["_of"].type === "Bool")
+    (p.type === "sys.Maybe" && p.children._of?.type === "Bool")
   ) {
     return SymbolKind.Boolean;
   }
@@ -42,9 +40,7 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.refType?.name === "Str" ||
     p.type === "Str" ||
     p.type === "sys.Str" ||
-    (p.type === "sys.Maybe" &&
-      p.children["_of"] &&
-      p.children["_of"].type === "Str")
+    (p.type === "sys.Maybe" && p.children._of?.type === "Str")
   ) {
     return SymbolKind.String;
   }
@@ -54,9 +50,7 @@ const getSymbolType = (p: Proto): SymbolKind => {
     p.refType?.name === "Number" ||
     p.type === "Number" ||
     p.type === "sys.Number" ||
-    (p.type === "sys.Maybe" &&
-      p.children["_of"] &&
-      p.children["_of"].type === "Number")
+    (p.type === "sys.Maybe" && p.children._of?.type === "Number")
   ) {
     return SymbolKind.Number;
   }
@@ -90,7 +84,7 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
   Object.keys(symbols).forEach((symbolName) => {
     const loc = symbols[symbolName].loc;
 
-    if (!loc || !loc.line || !loc.col) {
+    if (!loc || loc.line === 0 || loc.col === 0) {
       return;
     }
 
@@ -119,7 +113,7 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
       },
     };
 
-    if (Object.keys(symbols[symbolName].children).length) {
+    if (Object.keys(symbols[symbolName].children).length > 0) {
       docSymbol.children = generateSymbols(symbols[symbolName]);
     }
 

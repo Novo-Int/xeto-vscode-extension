@@ -7,21 +7,21 @@ export const enum EVENT_TYPE {
 type Callback = (type: EVENT_TYPE) => void;
 
 class EventBus {
-  private __callbacks: Record<EVENT_TYPE, Set<Callback>> = {
+  private readonly __callbacks: Record<EVENT_TYPE, Set<Callback>> = {
     [EVENT_TYPE.EXTERNAL_LIBS_LOADED]: new Set(),
     [EVENT_TYPE.SYS_LIBS_LOADED]: new Set(),
     [EVENT_TYPE.WORKSPACE_SCANNED]: new Set(),
   };
 
-  public addListener(type: EVENT_TYPE, callback: Callback) {
+  public addListener(type: EVENT_TYPE, callback: Callback): void {
     this.__callbacks[type].add(callback);
   }
 
-  public removeListener(type: EVENT_TYPE, callback: Callback) {
+  public removeListener(type: EVENT_TYPE, callback: Callback): void {
     this.__callbacks[type].delete(callback);
   }
 
-  public fire(type: EVENT_TYPE) {
+  public fire(type: EVENT_TYPE): void {
     this.__callbacks[type].forEach((callback) => {
       try {
         callback(type);

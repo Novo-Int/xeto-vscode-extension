@@ -1,25 +1,28 @@
 import {
-  Connection,
-  Diagnostic,
+  type Connection,
+  type Diagnostic,
   DiagnosticSeverity,
 } from "vscode-languageserver";
 import { eventBus, EVENT_TYPE } from "./events";
 import { isCompilerError, isPartOfLib } from "./utils";
 import { ProtoCompiler } from "./compiler/Compiler";
-import { LibraryManager, XetoLib } from "./libraries";
-import { Position, TextDocument } from "vscode-languageserver-textdocument";
-import { FileLoc } from "./compiler/FileLoc";
-import { Proto } from "./compiler/Proto";
+import { type LibraryManager, XetoLib } from "./libraries";
+import {
+  type Position,
+  type TextDocument,
+} from "vscode-languageserver-textdocument";
+import { type FileLoc } from "./compiler/FileLoc";
+import { type Proto } from "./compiler/Proto";
 
 let ARE_LIBS_LOADED = false;
 let noLoaded = 0;
 
-const libsLoadedCallback = () => {
-	noLoaded ++;
+const libsLoadedCallback = (): void => {
+  noLoaded++;
 
-	if (noLoaded === 3) {
-		ARE_LIBS_LOADED = true;
-	}
+  if (noLoaded === 3) {
+    ARE_LIBS_LOADED = true;
+  }
 };
 
 eventBus.addListener(EVENT_TYPE.EXTERNAL_LIBS_LOADED, libsLoadedCallback);
@@ -37,8 +40,8 @@ export const populateLibraryManager = async (
   compiler: ProtoCompiler,
   connection: Connection,
   libManager: LibraryManager
-) => {
-  if (!compiler.root) {
+): Promise<void> => {
+  if (compiler.root == null) {
     return;
   }
 
@@ -46,7 +49,7 @@ export const populateLibraryManager = async (
 
   const hasLib = await isPartOfLib(compiler.sourceUri, connection);
 
-  let libName: string | undefined = undefined;
+  let libName: string | undefined;
   let libVersion = "";
   let libDoc = "";
   const deps: string[] = [];
@@ -58,11 +61,11 @@ export const populateLibraryManager = async (
   const isLibMeta = compiler.sourceUri.endsWith("lib.xeto");
 
   if (isLibMeta) {
-    const pragma = compiler.root?.children["pragma"];
+    const pragma = compiler.root?.children.pragma;
 
     libName = split[split.length - 2];
     libVersion = pragma?.children._version.type;
-    libDoc = pragma?.doc || "";
+    libDoc = pragma?.doc ?? "";
 
     const protoDeps = pragma?.children._depends?.children;
 
@@ -80,7 +83,7 @@ export const populateLibraryManager = async (
     return;
   }
 
-  if (!libManager.getLib(libName)) {
+  if (libManager.getLib(libName) == null) {
     libManager.addLib(
       new XetoLib(libName, libVersion, compiler.sourceUri, libDoc)
     );
@@ -88,7 +91,7 @@ export const populateLibraryManager = async (
 
   const xetoLib = libManager.getLib(libName);
 
-  if (!xetoLib) {
+  if (xetoLib == null) {
     return;
   }
 
@@ -137,7 +140,7 @@ export const parseDocument = async (
           end: fileLocToDiagPosition(err.endLoc),
         },
         message: err.message,
-        //source: 'ex'
+        // source: 'ex'
       };
 
       diagnostics.push(diagnostic);
@@ -151,34 +154,35 @@ export const parseDocument = async (
           end: textDocument.positionAt(text.length),
         },
         message: e.message,
-        //source: 'ex'
+        // source: 'ex'
       };
 
       diagnostics.push(diagnostic);
     }
   } finally {
-	if (ARE_LIBS_LOADED) {
-		// resolve refs
-		const missingRefs: Proto[] = [];
-		compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
+    if (ARE_LIBS_LOADED) {
+      // resolve refs
+      const missingRefs: Proto[] = [];
+      compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
 
-		const missingRefsDiagnostics = missingRefs.map(proto => ({
-			severity: DiagnosticSeverity.Error,
-			range: {
-				start: textDocument.positionAt(proto.qnameLoc || proto.loc.charIndex),
-				end: textDocument.positionAt((proto.qnameLoc || proto.loc.charIndex) + proto.type.length)
-			},
-			message: 'No available definition for this proto'
-		}));
+      const missingRefsDiagnostics = missingRefs.map((proto) => ({
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: textDocument.positionAt(proto.qnameLoc || proto.loc.charIndex),
+          end: textDocument.positionAt(
+            (proto.qnameLoc || proto.loc.charIndex) + proto.type.length
+          ),
+        },
+        message: "No available definition for this proto",
+      }));
 
-		diagnostics.push(...missingRefsDiagnostics);
-	}
+      diagnostics.push(...missingRefsDiagnostics);
+    }
 
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
     // time to add it to the library manager
-    populateLibraryManager(compiler, connection, libManager);
+    void populateLibraryManager(compiler, connection, libManager);
   }
-  return;
 };
 
-export const compilersToLibs: Map<ProtoCompiler, XetoLib> = new Map();
+export const compilersToLibs = new Map<ProtoCompiler, XetoLib>();

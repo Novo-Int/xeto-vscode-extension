@@ -4,29 +4,23 @@
 import {
   createConnection,
   TextDocuments,
-  InitializeParams,
-  InitializeResult,
+  type InitializeParams,
+  type InitializeResult,
   BrowserMessageReader,
-  BrowserMessageWriter
+  BrowserMessageWriter,
 } from "vscode-languageserver/browser";
 
-import { VARS } from './utils';
-VARS.env = "BROWSER";
+import { VARS } from "./utils";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 
-import { ProtoCompiler } from "./compiler/Compiler";
+import { type ProtoCompiler } from "./compiler/Compiler";
 
-import {
-  LibraryManager,
-} from "./libraries/";
+import { LibraryManager } from "./libraries/";
 
 import { generateInitResults, onInitialized } from "./init";
 
-import {
-  compilersToLibs,
-  parseDocument
-} from "./parseDocument";
+import { compilersToLibs, parseDocument } from "./parseDocument";
 
 import {
   addAutoCompletion,
@@ -35,9 +29,10 @@ import {
   addSymbols,
   addSemanticTokens,
   addDefinition,
-  addHover
+  addHover,
 } from "./capabilities";
-import { EVENT_TYPE, eventBus } from './events';
+import { EVENT_TYPE, eventBus } from "./events";
+VARS.env = "BROWSER";
 
 const messageReader = new BrowserMessageReader(self);
 const messageWriter = new BrowserMessageWriter(self);
@@ -47,7 +42,7 @@ const messageWriter = new BrowserMessageWriter(self);
 const connection = createConnection(messageReader, messageWriter);
 
 // Create a simple text document manager.
-const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+const documents = new TextDocuments<TextDocument>(TextDocument);
 
 let rootFolders: string[] = [];
 
@@ -58,12 +53,12 @@ const libManager: LibraryManager = new LibraryManager();
 const getRootFolderFromParams = (params: InitializeParams): string[] => {
   let ret = "";
 
-  if (params.workspaceFolders) {
+  if (params.workspaceFolders != null) {
     return params.workspaceFolders.map((folder) =>
       folder.uri.replace("file://", "")
     );
   } else {
-    ret = params.rootUri || "";
+    ret = params.rootUri ?? "";
   }
 
   ret = ret.replace("file://", "");
@@ -71,13 +66,19 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
   return [ret];
 };
 
-const addWorkspaceRootToWatch = async (path: string, storage: string[] = []) => {
-  const files: [] = await connection.sendRequest('xfs/readDir', { path });
+const addWorkspaceRootToWatch = async (
+  path: string,
+  storage: string[] = []
+): Promise<string[]> => {
+  const files: Array<[string, number]> = await connection.sendRequest(
+    "xfs/readDir",
+    { path }
+  );
 
   await Promise.all(
-    files.map((entry) => {
+    files.map(async (entry) => {
       if (entry[1] === 2) {
-        return addWorkspaceRootToWatch(`${path}/${entry[0]}`, storage);
+        return await addWorkspaceRootToWatch(`${path}/${entry[0]}`, storage);
       } else {
         storage.push(`${path}/${entry[0]}`);
       }
@@ -87,47 +88,57 @@ const addWorkspaceRootToWatch = async (path: string, storage: string[] = []) => 
   return storage;
 };
 
-const parseAllRootFolders = () => {
+const parseAllRootFolders = (): void => {
   let noLoaded = 0;
 
   rootFolders
     .filter((folder) => Boolean(folder))
-    .forEach(async (folderPath) => {
-      const files = await addWorkspaceRootToWatch(folderPath);
+    .forEach((folderPath) => {
+      void (async function (): Promise<void> {
+        const files = await addWorkspaceRootToWatch(folderPath);
 
-      const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
+        const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
 
-      xetoFiles
-        .filter((file) => !docsToCompilerResults[file])
-        .forEach(async (file) => {
-          const textDocument = TextDocument.create(
-            file,
-            "xeto",
-            1,
-            (await connection.sendRequest('xfs/readFile', {path: file}))
-          );
+        xetoFiles
+          .filter((file) => !docsToCompilerResults[file])
+          .forEach((file) => {
+            void (async function (): Promise<void> {
+              const textDocument = TextDocument.create(
+                file,
+                "xeto",
+                1,
+                await connection.sendRequest("xfs/readFile", { path: file })
+              );
 
-          parseDocument(textDocument, connection, libManager, docsToCompilerResults);
+              void parseDocument(
+                textDocument,
+                connection,
+                libManager,
+                docsToCompilerResults
+              );
 
-          noLoaded ++;
-          if (noLoaded >= rootFolders.filter(Boolean).length) {
-            eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
-          }
-        });
+              noLoaded++;
+              if (noLoaded >= rootFolders.filter(Boolean).length) {
+                eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+              }
+            })();
+          });
+      })();
     });
 };
 
-
 connection.onInitialize((params: InitializeParams) => {
-  rootFolders = getRootFolderFromParams(params).map(str => str.replace(/\/$/,""));
+  rootFolders = getRootFolderFromParams(params).map((str) =>
+    str.replace(/\/$/, "")
+  );
 
   parseAllRootFolders();
 
   return generateInitResults(params);
 });
 
-connection.onInitialized(async (): Promise<InitializeResult> => {
-  onInitialized(connection, libManager, docsToCompilerResults);
+connection.onInitialized((): InitializeResult => {
+  void onInitialized(connection, libManager, docsToCompilerResults);
 
   return {
     capabilities: {},
@@ -136,7 +147,9 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 
 connection.onDidChangeConfiguration((change) => {
   // Revalidate all open text documents
-  documents.all().forEach((doc) => parseDocument(doc, connection, libManager, docsToCompilerResults));
+  documents.all().forEach((doc) => {
+    void parseDocument(doc, connection, libManager, docsToCompilerResults);
+  });
 });
 
 // The content of a text document has changed. This event is emitted
@@ -144,7 +157,12 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidChangeContent((change) => {
   parseAllRootFolders();
 
-  parseDocument(change.document, connection, libManager, docsToCompilerResults);
+  void parseDocument(
+    change.document,
+    connection,
+    libManager,
+    docsToCompilerResults
+  );
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
@@ -154,9 +172,21 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-addHover(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
+addHover(
+  connection,
+  docsToCompilerResults,
+  documents,
+  compilersToLibs,
+  libManager
+);
 
-addDefinition(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
+addDefinition(
+  connection,
+  docsToCompilerResults,
+  documents,
+  compilersToLibs,
+  libManager
+);
 
 addSemanticTokens(connection, libManager, docsToCompilerResults);
 

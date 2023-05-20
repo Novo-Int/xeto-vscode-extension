@@ -1,27 +1,33 @@
-import { LibraryManager } from "./LibManager";
+import { type LibraryManager } from "./LibManager";
 import { XetoLib } from "./XetoLib";
 import { ProtoCompiler } from "../compiler/Compiler";
 import { readUrl } from "./utils";
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { EVENT_TYPE, eventBus } from '../events';
+import { EVENT_TYPE, eventBus } from "../events";
 
-const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
+const loadExtLib = (
+  root: string,
+  lm: LibraryManager,
+  priority: number
+): void => {
   try {
     const files = fs.readdirSync(root, { withFileTypes: true });
     const libName = path.basename(root);
 
     //	parse the lib file first
-    const libXetoContents = fs.readFileSync(`${root}/lib.xeto`).toString("utf-8");
+    const libXetoContents = fs
+      .readFileSync(`${root}/lib.xeto`)
+      .toString("utf-8");
     const libInfoCompiler = new ProtoCompiler(root);
 
     libInfoCompiler.run(libXetoContents);
 
     const libVersion =
-      libInfoCompiler.root?.children["pragma"]?.children._version.type ||
+      libInfoCompiler.root?.children.pragma?.children._version.type ??
       "unknown";
-    const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
+    const libDoc = libInfoCompiler.root?.children.pragma?.doc ?? "";
 
     const lib = new XetoLib(libName, libVersion, root, libDoc);
     lib.includePriority = priority;
@@ -30,7 +36,9 @@ const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
     files
       .filter(
         (file) =>
-          file.isFile() && file.name.endsWith("xeto") && file.name !== "lib.xeto"
+          file.isFile() &&
+          file.name.endsWith("xeto") &&
+          file.name !== "lib.xeto"
       )
       .forEach((file) => {
         const filePath = path.join(root, file.name);
@@ -39,7 +47,7 @@ const loadExtLib = (root: string, lm: LibraryManager, priority: number) => {
         const compiler = new ProtoCompiler(filePath);
         compiler.run(fileContent);
 
-        if (!compiler.root) {
+        if (compiler.root == null) {
           return;
         }
 
@@ -58,7 +66,7 @@ const loadExtLibFromWeb = async (
   def: ExtLibDef,
   lm: LibraryManager,
   priority: number
-) => {
+): Promise<void> => {
   const libInfoUri = def.lib;
 
   const libXeto = await readUrl(libInfoUri);
@@ -72,9 +80,8 @@ const loadExtLibFromWeb = async (
   }
 
   const libVersion =
-    libInfoCompiler.root?.children["pragma"]?.children._version.type ||
-    "unknown";
-  const libDoc = libInfoCompiler.root?.children["pragma"]?.doc || "";
+    libInfoCompiler.root?.children.pragma?.children._version.type ?? "unknown";
+  const libDoc = libInfoCompiler.root?.children.pragma?.doc ?? "";
 
   const lib = new XetoLib(
     def.name,
@@ -90,7 +97,7 @@ const loadExtLibFromWeb = async (
     const content = await readUrl(uri);
     compiler.run(content + "\0");
 
-    if (!compiler.root) {
+    if (compiler.root == null) {
       return;
     }
 
@@ -104,12 +111,13 @@ const loadExtLibFromWeb = async (
   lm.addLib(lib);
 };
 
-const isFolderLib = (path: string): boolean => fs.existsSync(`${path}/lib.xeto`);
+const isFolderLib = (path: string): boolean =>
+  fs.existsSync(`${path}/lib.xeto`);
 
 export const loadExtLibs = (
-  sources: (string | ExtLibDef)[],
+  sources: Array<string | ExtLibDef>,
   lm: LibraryManager
-) => {
+): void => {
   sources.forEach((root, index) => {
     try {
       if (typeof root === "string") {
@@ -124,12 +132,12 @@ export const loadExtLibs = (
               (entry) =>
                 entry.isDirectory() && isFolderLib(`${root}/${entry.name}`)
             )
-            .map((dir) =>
-              loadExtLib(`${root}/${dir.name}`, lm, sources.length - index)
-            );
+            .forEach((dir) => {
+              loadExtLib(`${root}/${dir.name}`, lm, sources.length - index);
+            });
         }
       } else {
-        loadExtLibFromWeb(root, lm, sources.length - index);
+        void loadExtLibFromWeb(root, lm, sources.length - index);
       }
     } catch (e) {
       console.log(e);
@@ -139,8 +147,8 @@ export const loadExtLibs = (
   eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
 };
 
-export type ExtLibDef = {
+export interface ExtLibDef {
   name: string;
   lib: string;
   files: string[];
-};
+}

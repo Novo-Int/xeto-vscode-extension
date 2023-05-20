@@ -27,11 +27,11 @@ export class Token {
   // unknown
   static UNKNOWN = new Token("unknown");
 
-  private dis: string;
-  private symbol: string;
+  private readonly dis: string;
+  private readonly symbol: string;
   public readonly isVal: boolean;
 
-  private constructor (dis: string, isVal = false) {
+  private constructor(dis: string, isVal = false) {
     this.dis = dis;
     this.symbol = dis;
     this.isVal = isVal;

@@ -1,4 +1,4 @@
-import { isAlpha, isAlphaNumeric, toHex } from "./StringUtils";
+import { isAlpha, isAlphaNumeric } from "./StringUtils";
 
 export class Path {
   static root: Path = {
@@ -6,12 +6,12 @@ export class Path {
     size: 0,
     add: (segment: string) => new Path(segment),
     isRoot: true,
-    toString: () => '',
-    //https://stackoverflow.com/questions/34523334/how-to-assign-object-literal-to-variable-with-private-properties
+    toString: () => "",
+    // https://stackoverflow.com/questions/34523334/how-to-assign-object-literal-to-variable-with-private-properties
     ...({} as any),
   };
 
-  private segments: string[] = [];
+  private readonly segments: string[] = [];
 
   public constructor(...rest: string[]) {
     this.segments = [...rest];
@@ -24,7 +24,7 @@ export class Path {
       segments.some(
         (s) =>
           s === "" ||
-          (isAlpha(s.charAt(0)) === false && s.charAt(0) !== "_") ||
+          (!isAlpha(s.charAt(0)) && s.charAt(0) !== "_") ||
           s.split("").some((l) => !isAlphaNumeric(l))
       )
     ) {
@@ -42,9 +42,7 @@ export class Path {
     return this.segments.length;
   }
 
-  get isRoot(): boolean {
-    return false;
-  }
+  readonly isRoot = false;
 
   public add(segment: string): Path {
     return new Path(...this.segments, segment);

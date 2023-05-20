@@ -1,6 +1,6 @@
-import { RenameParams, TextEdit } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
-import { ProtoCompiler } from "../compiler/Compiler";
+import { type RenameParams, type TextEdit } from "vscode-languageserver";
+import { type TextDocument } from "vscode-languageserver-textdocument";
+import { type ProtoCompiler } from "../compiler/Compiler";
 import { findRefsToProto } from "../FindProto";
 
 export const renameInDoc = (
@@ -12,7 +12,7 @@ export const renameInDoc = (
   const edits: TextEdit[] = [];
 
   const refs =
-    (compiler.root && findRefsToProto(oldQName, compiler.root)) || [];
+    (compiler.root != null && findRefsToProto(oldQName, compiler.root)) || [];
 
   if (refs) {
     const text = doc.getText();
@@ -43,18 +43,18 @@ export const renameInDoc = (
   }
 
   //  consolidate overlapping ranges
-  return edits.reduce((acc, current) => {
+  return edits.reduce<TextEdit[]>((acc, current) => {
     if (
       acc.find(
         (c) =>
           c.range.start.character === current.range.start.character &&
           c.range.start.line === current.range.start.line
-      )
+      ) != null
     ) {
       return acc;
     }
 
     acc.push(current);
     return acc;
-  }, [] as TextEdit[]);
+  }, []);
 };

@@ -1,13 +1,13 @@
 import { Path } from "./Path";
-import { FileLoc } from "./FileLoc";
-import { UnknownProtoError } from './Errors';
+import { type FileLoc } from "./FileLoc";
+import { UnknownProtoError } from "./Errors";
 
 export class CLib {
   readonly path: Path; // library dotted name
   readonly qname: string; // dotted qualified name
   readonly loc: FileLoc; // location of directory
   readonly source: string;
-  /*const File dir      // directory which contains lib.xeto
+  /* const File dir      // directory which contains lib.xeto
     const File[] src    // xeto files (first is always lib.xeto)
     */
   readonly isSys: boolean; // is this the sys lib
@@ -15,16 +15,16 @@ export class CLib {
   depends?: CLib[]; // ResolveDepends
   resolvedNames = false; // ResolveNames
 
-  //Bool isLibMetaFile(File f) { f === src.first }
+  // Bool isLibMetaFile(File f) { f === src.first }
 
   constructor(loc: FileLoc, path: Path, source: string, proto: CProto) {
     this.loc = loc;
     this.path = path;
     this.qname = path.toString();
     this.source = source;
-    //this.dir   = dir
-    //this.src   = src
-    this.isSys = this.qname == "sys";
+    // this.dir   = dir
+    // this.src   = src
+    this.isSys = this.qname === "sys";
     this.proto = proto;
   }
 }
@@ -64,7 +64,7 @@ export class CProto {
     }
 
     const typeKid = this.type?.get(name);
-    if (typeKid) {
+    if (typeKid != null) {
       return kid;
     }
 
@@ -91,31 +91,43 @@ export class CProto {
   }
 
   get path(): Path {
-    return this.isRoot ? Path.root : this.parent!.path.add(this.name);
+    return this.isRoot ? Path.root : (this.parent?.path.add(this.name) as Path);
   }
 
-  public isMeta(): boolean { return this.name[0] === '_'; }
+  public isMeta(): boolean {
+    return this.name[0] === "_";
+  }
 
   public isObj(): boolean {
     return this.qname === "sys.Obj";
   }
 
-  public isEnum() { return this.qname === "sys.Enum"; }
+  public isEnum(): boolean {
+    return this.qname === "sys.Enum";
+  }
 
-  public isMarker() { return this.qname === "sys.Marker"; }
+  public isMarker(): boolean {
+    return this.qname === "sys.Marker";
+  }
 
-  public isMaybe() { return this.qname === "sys.Maybe"; }
+  public isMaybe(): boolean {
+    return this.qname === "sys.Maybe";
+  }
 
-  public isAnd() { return this.qname === "sys.And"; }
+  public isAnd(): boolean {
+    return this.qname === "sys.And";
+  }
 
-  public isOr() { return this.qname === "sys.Or"; }
+  public isOr(): boolean {
+    return this.qname === "sys.Or";
+  }
 
   public toString(): string {
     return this.isRoot ? "_root_" : this.path.toString();
   }
 
   public get assignName(): string {
-    return "_" + this.nameCounter++;
+    return `_${this.nameCounter++}`;
   }
 }
 
@@ -141,21 +153,21 @@ export class CType {
     this.resolved = resolved;
   }
 
-  public static makeMaybe(of: CType) {
+  public static makeMaybe(of: CType): CType {
     const ret = new CType(of.loc, "sys.Maybe");
     ret.of = [of];
 
     return ret;
   }
 
-  public static makeOr(of: CType[]) {
+  public static makeOr(of: CType[]): CType {
     const ret = new CType(of[0].loc, "sys.Or");
     ret.of = of;
 
     return ret;
   }
 
-  public static makeAnd(of: CType[]) {
+  public static makeAnd(of: CType[]): CType {
     const ret = new CType(of[0].loc, "sys.And");
     ret.of = of;
 
@@ -175,7 +187,7 @@ export class CType {
   }
 
   public deref(): CProto {
-    if (this.resolved) {
+    if (this.resolved != null) {
       return this.resolved;
     }
 
@@ -187,10 +199,10 @@ export class CType {
       return this.deref().get(name, false);
     }
 
-    for( let i = 0; i < this.of.length; i++) {
+    for (let i = 0; i < this.of.length; i++) {
       const found = this.of[i].get(name);
 
-      if (found) {
+      if (found != null) {
         return found;
       }
     }

@@ -1,9 +1,12 @@
-import { TextDocument, Position } from "vscode-languageserver-textdocument";
-import { findProtoByQname } from '../FindProto';
-import { Proto } from '../compiler/Proto';
-import { ProtoCompiler } from '../compiler/Compiler';
-import { TextDocuments } from 'vscode-languageserver';
-import { LibraryManager, XetoLib } from '../libraries';
+import {
+  type TextDocument,
+  type Position,
+} from "vscode-languageserver-textdocument";
+import { findProtoByQname } from "../FindProto";
+import { type Proto } from "../compiler/Proto";
+import { type ProtoCompiler } from "../compiler/Compiler";
+import { type TextDocuments } from "vscode-languageserver";
+import { type LibraryManager, type XetoLib } from "../libraries";
 
 const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
@@ -18,7 +21,10 @@ export function getIdentifierForPosition(
   // this is naive, but we go backwards until we reach a :
   let identifier = "";
 
-  while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
+  while (
+    position >= -1 &&
+    text.charAt(position).match(identifierCharRegexp) != null
+  ) {
     identifier = text.charAt(position) + identifier;
     position--;
   }
@@ -39,7 +45,7 @@ export function getIdentifierLength(doc: TextDocument, pos: Position): number {
 
   while (
     position >= -1 &&
-    text.charAt(position).match(identifierSegmentCharRegexp)
+    text.charAt(position).match(identifierSegmentCharRegexp) != null
   ) {
     position--;
     length++;
@@ -63,7 +69,10 @@ export function getLargestIdentifierForPosition(
     position--;
   }
 
-  while (position >= -1 && text.charAt(position).match(identifierCharRegexp)) {
+  while (
+    position >= -1 &&
+    text.charAt(position).match(identifierCharRegexp) != null
+  ) {
     identifier = text.charAt(position) + identifier;
     position--;
   }
@@ -73,7 +82,7 @@ export function getLargestIdentifierForPosition(
   position = doc.offsetAt(pos) + 1;
   while (
     position < text.length &&
-    text.charAt(position).match(identifierSegmentCharRegexp)
+    text.charAt(position).match(identifierSegmentCharRegexp) != null
   ) {
     identifier += text.charAt(position);
     position++;
@@ -84,13 +93,13 @@ export function getLargestIdentifierForPosition(
   return identifier.split(".");
 }
 
-type ProtoFromLocInput = {
-	uri: string,
-	pos: Position,
-	compiledDocs: Record<string, ProtoCompiler>,
-	documents: TextDocuments<TextDocument>,
-	compilersToLibs: Map<ProtoCompiler, XetoLib>
-	libManager: LibraryManager
+interface ProtoFromLocInput {
+  uri: string;
+  pos: Position;
+  compiledDocs: Record<string, ProtoCompiler>;
+  documents: TextDocuments<TextDocument>;
+  compilersToLibs: Map<ProtoCompiler, XetoLib>;
+  libManager: LibraryManager;
 }
 
 export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
@@ -98,7 +107,7 @@ export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
   const compiledDocument = input.compiledDocs[input.uri];
   const doc = input.documents.get(input.uri);
 
-  if (!compiledDocument || !doc) {
+  if (!compiledDocument || doc === undefined) {
     return null;
   }
 
@@ -112,21 +121,24 @@ export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
     compiledDocument.root &&
     findProtoByQname(identifier.join("."), compiledDocument.root);
 
-  if (proto) {
+  if (proto != null) {
     return proto;
   } else {
     // 	search in the files lib first
     const lib = input.compilersToLibs.get(compiledDocument);
 
-    if (lib) {
+    if (lib != null) {
       const proto = findProtoByQname(identifier.join("."), lib.rootProto);
 
-      if (proto) {
+      if (proto != null) {
         return proto;
       }
     }
 
-    const proto = input.libManager.findProtoByQName(identifier.join("."), lib?.deps);
+    const proto = input.libManager.findProtoByQName(
+      identifier.join("."),
+      lib?.deps
+    );
 
     return proto;
   }

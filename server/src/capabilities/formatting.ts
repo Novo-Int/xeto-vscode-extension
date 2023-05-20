@@ -1,13 +1,20 @@
-import { Connection, DocumentFormattingParams, TextDocuments } from "vscode-languageserver";
-import { TextDocument, TextEdit } from "vscode-languageserver-textdocument";
+import {
+  type Connection,
+  type DocumentFormattingParams,
+  type TextDocuments,
+} from "vscode-languageserver";
+import {
+  type TextDocument,
+  type TextEdit,
+} from "vscode-languageserver-textdocument";
 import { formatFile } from "../formatting";
-import { ProtoCompiler } from '../compiler/Compiler';
+import { type ProtoCompiler } from "../compiler/Compiler";
 
 export const addFormatting = (
   connection: Connection,
   documents: TextDocuments<TextDocument>,
   docsToCompilerResults: Record<string, ProtoCompiler>
-) => {
+): void => {
   function onDocumentFormatting(params: DocumentFormattingParams): TextEdit[] {
     const uri = params.textDocument.uri;
 
@@ -19,13 +26,13 @@ export const addFormatting = (
 
     const tokenBag = compiler.tokenBag;
 
-    if (!tokenBag || !tokenBag.length) {
+    if (!tokenBag || tokenBag.length === 0) {
       return [];
     }
 
     const doc = documents.get(uri);
 
-    if (!doc) {
+    if (doc == null) {
       return [];
     }
 

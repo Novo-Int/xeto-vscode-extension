@@ -1,13 +1,13 @@
 import {
-  Connection,
-  Definition,
-  DefinitionParams,
-  TextDocuments,
+  type Connection,
+  type Definition,
+  type DefinitionParams,
+  type TextDocuments,
 } from "vscode-languageserver";
 import { getProtoFromFileLoc } from "./utils";
-import { ProtoCompiler } from "../compiler/Compiler";
-import { TextDocument } from 'vscode-languageserver-textdocument';
-import { LibraryManager, XetoLib } from '../libraries';
+import { type ProtoCompiler } from "../compiler/Compiler";
+import { type TextDocument } from "vscode-languageserver-textdocument";
+import { type LibraryManager, type XetoLib } from "../libraries";
 
 export const addDefinition = (
   connection: Connection,
@@ -15,7 +15,7 @@ export const addDefinition = (
   documents: TextDocuments<TextDocument>,
   compilersToLibs: Map<ProtoCompiler, XetoLib>,
   libManager: LibraryManager
-) => {
+): void => {
   function handleDefinition(params: DefinitionParams): Definition | null {
     const proto = getProtoFromFileLoc({
       uri: params.textDocument.uri,
@@ -26,7 +26,7 @@ export const addDefinition = (
       libManager,
     });
 
-    if (!proto || !proto.loc) {
+    if (proto == null || !proto.loc) {
       return null;
     }
 

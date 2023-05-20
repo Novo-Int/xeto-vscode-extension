@@ -1,15 +1,15 @@
-import { FormattingOptions } from "vscode-languageserver/node";
+import { type FormattingOptions } from "vscode-languageserver/node";
 
 import { Position, Range, TextEdit } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
+import { type TextDocument } from "vscode-languageserver-textdocument";
 import { Token } from "../compiler/Token";
-import { TokenWithPosition } from "../compiler/Parser";
+import { type TokenWithPosition } from "../compiler/Parser";
 
 const generateWhiteSpaces = (
   options: FormattingOptions,
   depth: number
 ): string => {
-  return new Array(options.insertSpaces ? depth * options.tabSize: depth)
+  return new Array(options.insertSpaces ? depth * options.tabSize : depth)
     .fill(options.insertSpaces ? " " : "\t")
     .join("");
 };
@@ -23,8 +23,6 @@ export const formatFile = (
 
   let depth = 0;
   let i = 0;
-
-  const inputText = doc.getText();
 
   while (i < tokenBag.length) {
     if (tokenBag[i].token === Token.LBRACE) {
@@ -92,7 +90,12 @@ export const formatFile = (
     ) {
       ret.push(
         TextEdit.replace(
-          Range.create(tokenBag[i].line, tokenBag[i].col, tokenBag[i+1].line, tokenBag[i+1].col - 1),
+          Range.create(
+            tokenBag[i].line,
+            tokenBag[i].col,
+            tokenBag[i + 1].line,
+            tokenBag[i + 1].col - 1
+          ),
           "\n" + generateWhiteSpaces(options, depth)
         )
       );
@@ -160,7 +163,7 @@ export const formatFile = (
       }
     }
 
-		//	no space between identifier and . DOT
+    //	no space between identifier and . DOT
     if (
       tokenBag[i].token === Token.ID &&
       tokenBag[i + 1]?.token === Token.DOT

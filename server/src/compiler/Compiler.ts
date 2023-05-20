@@ -1,6 +1,6 @@
 import { CompilerError, ErrorTypes } from "./Errors";
 import { FileLoc } from "./FileLoc";
-import { Parser, TokenWithPosition } from "./Parser";
+import { Parser, type TokenWithPosition } from "./Parser";
 import { Proto } from "./Proto";
 
 export class ProtoCompiler {
@@ -11,7 +11,7 @@ export class ProtoCompiler {
 
   public tokenBag: TokenWithPosition[] = [];
 
-  private ast: Record<string, unknown> = {};
+  private readonly ast: Record<string, unknown> = {};
 
   public constructor(sourceUri: string) {
     this.sourceUri = sourceUri;
@@ -25,17 +25,17 @@ export class ProtoCompiler {
   public logErr(msg: string, type: ErrorTypes, where: FileLoc): void;
   public logErr(
     msg: string | CompilerError,
-    type?: ErrorTypes,
-    where?: FileLoc
+    type: ErrorTypes = ErrorTypes.NOT_REPORTED,
+    where: FileLoc = FileLoc.unknown
   ): void {
     if (this.isCompilerError(msg)) {
       this.errs.push(msg);
     } else {
-      this.errs.push(new CompilerError(msg, type!, where!));
+      this.errs.push(new CompilerError(msg, type, where));
     }
   }
 
-  public run(input: string) {
+  public run(input: string): void {
     if (!input.endsWith("\0")) {
       input += "\0";
     }
@@ -51,7 +51,7 @@ export class ProtoCompiler {
     location: { line: number; character: number },
     root = this.root
   ): string {
-    if (!root) {
+    if (root == null) {
       return "";
     }
 

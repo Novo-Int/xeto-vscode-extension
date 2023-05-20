@@ -1,11 +1,17 @@
-import { CompilerError, ErrorTypes } from './Errors';
-import { FileLoc } from './FileLoc';
-import { isAlpha, isAlphaNumeric, isNumeric, toHex, toCode } from "./StringUtils";
+import { CompilerError, ErrorTypes } from "./Errors";
+import { FileLoc } from "./FileLoc";
+import {
+  isAlpha,
+  isAlphaNumeric,
+  isNumeric,
+  toHex,
+  toCode,
+} from "./StringUtils";
 import { Token } from "./Token";
 
 export class Tokenizer {
   private tok: Token;
-  private input: string;
+  private readonly input: string;
 
   public currentError?: CompilerError;
 
@@ -82,7 +88,7 @@ export class Tokenizer {
       }
       this.consume();
       this.tok = Token.NL;
-      this.val= '\n';
+      this.val = "\n";
       return this.tok;
     }
 
@@ -102,7 +108,7 @@ export class Tokenizer {
       return this.tok;
     }
 
-    if (this.cur === '-' && isNumeric(this.peek)) {
+    if (this.cur === "-" && isNumeric(this.peek)) {
       this.tok = this.num();
       return this.tok;
     }
@@ -113,7 +119,7 @@ export class Tokenizer {
     return this.tok;
   }
 
-  private lockLoc() {
+  private lockLoc(): void {
     this.col = this.curCol;
     this.line = this.curLine;
     this.charIndex = this.curCharIndex;
@@ -163,10 +169,11 @@ export class Tokenizer {
       }
 
       if (ch === "\0") {
-        this.currentError = new CompilerError("Unexpected end of str",
-              ErrorTypes.UNCLOSED_STRING,
-              new FileLoc("", this.line, this.col, this.charIndex),
-              new FileLoc("", this.curLine, this.curCol)
+        this.currentError = new CompilerError(
+          "Unexpected end of str",
+          ErrorTypes.UNCLOSED_STRING,
+          new FileLoc("", this.line, this.col, this.charIndex),
+          new FileLoc("", this.curLine, this.curCol)
         );
         this.val = s;
         return Token.STR;
@@ -257,7 +264,16 @@ export class Tokenizer {
   }
 
   private isNum(c: string): boolean {
-    return isAlphaNumeric(c) || c === '-' || c == '.' || c == '$' || c == ':' || c == '/' || c == '%' || c.charCodeAt(0) > 128;
+    return (
+      isAlphaNumeric(c) ||
+      c === "-" ||
+      c === "." ||
+      c === "$" ||
+      c === ":" ||
+      c === "/" ||
+      c === "%" ||
+      c.charCodeAt(0) > 128
+    );
   }
 
   private operator(): Token {
@@ -299,11 +315,12 @@ export class Tokenizer {
 
     if (c === "\0") return Token.EOF;
 
-    if (c === '') {
+    if (c === "") {
       return Token.UNKNOWN;
     }
 
-    throw new CompilerError(`Unexpected symbol: ${toCode(c, "'")} (0x${toHex(c)})`,
+    throw new CompilerError(
+      `Unexpected symbol: ${toCode(c, "'")} (0x${toHex(c)})`,
       ErrorTypes.UNCLOSED_STRING,
       new FileLoc("", this.line, this.col, this.charIndex),
       new FileLoc("", this.curLine, this.curCol)
@@ -331,18 +348,18 @@ export class Tokenizer {
     return Token.COMMENT;
   }
 
-  private skipCommentSL() {
+  private skipCommentSL(): void {
     this.consume(); // first slash
     this.consume(); // next slash
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      if (this.cur === "\n" || this.cur == "\0") break;
+      if (this.cur === "\n" || this.cur === "\0") break;
       this.consume();
     }
   }
 
-  private skipCommentML() {
+  private skipCommentML(): void {
     this.consume(); // first slash
     this.consume(); // next slash
     let depth = 1;
@@ -373,7 +390,7 @@ export class Tokenizer {
     }
   }
 
-  private consume() {
+  private consume(): void {
     this.cur = this.peek;
     this.curLine = this.peekLine;
     this.curCol = this.peekCol;

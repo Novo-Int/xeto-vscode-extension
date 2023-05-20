@@ -1,13 +1,13 @@
 import {
-  Connection,
-  Hover,
-  HoverParams,
-  TextDocuments,
+  type Connection,
+  type Hover,
+  type HoverParams,
+  type TextDocuments,
 } from "vscode-languageserver";
 import { getProtoFromFileLoc } from "./utils";
-import { ProtoCompiler } from "../compiler/Compiler";
-import { TextDocument } from "vscode-languageserver-textdocument";
-import { LibraryManager, XetoLib } from "../libraries";
+import { type ProtoCompiler } from "../compiler/Compiler";
+import { type TextDocument } from "vscode-languageserver-textdocument";
+import { type LibraryManager, type XetoLib } from "../libraries";
 
 export const addHover = (
   connection: Connection,
@@ -15,7 +15,7 @@ export const addHover = (
   documents: TextDocuments<TextDocument>,
   compilersToLibs: Map<ProtoCompiler, XetoLib>,
   libManager: LibraryManager
-) => {
+): void => {
   function handleHover(params: HoverParams): Hover | null {
     const proto = getProtoFromFileLoc({
       uri: params.textDocument.uri,
@@ -26,12 +26,12 @@ export const addHover = (
       libManager,
     });
 
-    if (!proto) {
+    if (proto == null) {
       return null;
     }
 
     return {
-      contents: proto.doc || "",
+      contents: proto.doc ?? "",
     };
   }
 

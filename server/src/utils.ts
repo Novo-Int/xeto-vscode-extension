@@ -1,5 +1,5 @@
-import { Connection } from "vscode-languageserver";
-import { CompilerError } from "./compiler/Errors";
+import { type Connection } from "vscode-languageserver";
+import { type CompilerError } from "./compiler/Errors";
 
 export const VARS: {
   env: "BROWSER" | "NODE";
@@ -14,7 +14,7 @@ export const isPartOfLib = async (
   if (VARS.env === "BROWSER") {
     const split = path.split("/");
 
-    return connection.sendRequest("xfs/exists", {
+    return await connection.sendRequest("xfs/exists", {
       path: [...[...split].slice(0, -1), "lib.xeto"].join("/"),
     });
   } else {

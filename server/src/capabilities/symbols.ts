@@ -1,17 +1,17 @@
 import {
-  Connection,
-  DocumentSymbol,
-  DocumentSymbolParams,
-  SymbolInformation,
-  WorkspaceSymbolParams,
+  type Connection,
+  type DocumentSymbol,
+  type DocumentSymbolParams,
+  type SymbolInformation,
+  type WorkspaceSymbolParams,
 } from "vscode-languageserver";
 import { generateSymbols } from "../symbols";
-import { ProtoCompiler } from "../compiler/Compiler";
+import { type ProtoCompiler } from "../compiler/Compiler";
 
 export const addSymbols = (
   connection: Connection,
   compiledDocs: Record<string, ProtoCompiler>
-) => {
+): void => {
   function onDocumentSymbols(params: DocumentSymbolParams): DocumentSymbol[] {
     const uri = params.textDocument.uri;
 
@@ -26,7 +26,7 @@ export const addSymbols = (
 
     const root = compiler.root;
 
-    if (!root) {
+    if (root == null) {
       return [];
     }
 
@@ -38,22 +38,21 @@ export const addSymbols = (
   function onWorkspaceSymbols(
     params: WorkspaceSymbolParams
   ): SymbolInformation[] {
-    const searched = params.query;
     const toRet: SymbolInformation[] = [];
 
     for (const uri in compiledDocs) {
       const root = compiledDocs[uri].root;
 
-      if (!root) {
+      if (root == null) {
         continue;
       }
 
       const symbols = generateSymbols(root).map((symbol) => ({
         ...symbol,
-		location: {
-			uri,
-			range: symbol.range
-		}
+        location: {
+          uri,
+          range: symbol.range,
+        },
       }));
 
       toRet.push(...symbols);

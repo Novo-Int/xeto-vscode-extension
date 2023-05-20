@@ -1,26 +1,26 @@
 import {
-  Connection,
-  SemanticTokens,
-  SemanticTokensParams,
+  type Connection,
+  type SemanticTokens,
+  type SemanticTokensParams,
 } from "vscode-languageserver";
 import {
   convertProtosToSemanticTokens,
   extractSemanticProtos,
 } from "../semantic-tokens";
-import { LibraryManager } from "../libraries";
-import { ProtoCompiler } from "../compiler/Compiler";
+import { type LibraryManager } from "../libraries";
+import { type ProtoCompiler } from "../compiler/Compiler";
 
 export const addSemanticTokens = (
   connection: Connection,
   libManager: LibraryManager,
   compiledDocs: Record<string, ProtoCompiler>
-) => {
+): void => {
   function handleSemanticTokens(params: SemanticTokensParams): SemanticTokens {
     const uri = params.textDocument.uri;
 
     const compiler = compiledDocs[uri];
 
-    if (!compiler || !compiler.root) {
+    if (!compiler || compiler.root == null) {
       return {
         data: [],
       };

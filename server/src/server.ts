@@ -5,29 +5,23 @@ import {
   createConnection,
   TextDocuments,
   ProposedFeatures,
-  InitializeParams,
-  InitializeResult,
+  type InitializeParams,
+  type InitializeResult,
 } from "vscode-languageserver/node";
 
-import { VARS } from './utils';
-VARS.env = "NODE";
+import { VARS } from "./utils";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import fs from "fs/promises";
 
-import { ProtoCompiler } from "./compiler/Compiler";
-import { Dirent } from "fs";
-import {
-  LibraryManager,
-} from "./libraries/";
+import { type ProtoCompiler } from "./compiler/Compiler";
+import { type Dirent } from "fs";
+import { LibraryManager } from "./libraries/";
 
 import { generateInitResults, onInitialized } from "./init";
 
-import {
-  compilersToLibs,
-  parseDocument
-} from "./parseDocument";
+import { compilersToLibs, parseDocument } from "./parseDocument";
 
 import {
   addAutoCompletion,
@@ -36,15 +30,16 @@ import {
   addSymbols,
   addSemanticTokens,
   addDefinition,
-  addHover
+  addHover,
 } from "./capabilities";
+VARS.env = "NODE";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
 
 // Create a simple text document manager.
-const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+const documents = new TextDocuments<TextDocument>(TextDocument);
 
 let rootFolders: string[] = [];
 
@@ -55,12 +50,12 @@ const libManager: LibraryManager = new LibraryManager();
 const getRootFolderFromParams = (params: InitializeParams): string[] => {
   let ret = "";
 
-  if (params.workspaceFolders) {
+  if (params.workspaceFolders != null) {
     return params.workspaceFolders.map((folder) =>
       folder.uri.replace("file://", "")
     );
   } else {
-    ret = params.rootUri || "";
+    ret = params.rootUri ?? "";
   }
 
   ret = ret.replace("file://", "");
@@ -68,15 +63,21 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
   return [ret];
 };
 
-const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
+const addWorkspaceRootToWatch = async (
+  uri: string,
+  storage: string[] = []
+): Promise<string[]> => {
   const files = await fs.readdir(uri, {
     withFileTypes: true,
   });
 
   await Promise.all(
-    files.map((dirEntry: Dirent) => {
+    files.map(async (dirEntry: Dirent) => {
       if (dirEntry.isDirectory()) {
-        return addWorkspaceRootToWatch(`${uri}/${dirEntry.name}`, storage);
+        return await addWorkspaceRootToWatch(
+          `${uri}/${dirEntry.name}`,
+          storage
+        );
       } else {
         storage.push(`${uri}/${dirEntry.name}`);
       }
@@ -86,26 +87,33 @@ const addWorkspaceRootToWatch = async (uri: string, storage: string[] = []) => {
   return storage;
 };
 
-const parseAllRootFolders = () => {
+const parseAllRootFolders = (): void => {
   rootFolders
     .filter((folder) => Boolean(folder))
-    .forEach(async (folderPath) => {
-      const files = await addWorkspaceRootToWatch(folderPath);
+    .forEach((folderPath) => {
+      void addWorkspaceRootToWatch(folderPath).then((files) => {
+        const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
 
-      const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
+        xetoFiles
+          .filter((file) => !docsToCompilerResults[`file://${file}`])
+          .forEach((file) => {
+            void fs.readFile(file).then((content) => {
+              const textDocument = TextDocument.create(
+                `file://${file}`,
+                "xeto",
+                1,
+                content.toString()
+              );
 
-      xetoFiles
-        .filter((file) => !docsToCompilerResults[`file://${file}`])
-        .forEach(async (file) => {
-          const textDocument = TextDocument.create(
-            `file://${file}`,
-            "xeto",
-            1,
-            await (await fs.readFile(file)).toString()
-          );
-
-          parseDocument(textDocument, connection, libManager, docsToCompilerResults);
-        });
+              void parseDocument(
+                textDocument,
+                connection,
+                libManager,
+                docsToCompilerResults
+              );
+            });
+          });
+      });
     });
 };
 
@@ -117,8 +125,8 @@ connection.onInitialize((params: InitializeParams) => {
   return generateInitResults(params);
 });
 
-connection.onInitialized(async (): Promise<InitializeResult> => {
-  onInitialized(connection, libManager, docsToCompilerResults);
+connection.onInitialized((): InitializeResult => {
+  void onInitialized(connection, libManager, docsToCompilerResults);
 
   return {
     capabilities: {},
@@ -127,7 +135,9 @@ connection.onInitialized(async (): Promise<InitializeResult> => {
 
 connection.onDidChangeConfiguration((change) => {
   // Revalidate all open text documents
-  documents.all().forEach((doc) => parseDocument(doc, connection, libManager, docsToCompilerResults));
+  documents.all().forEach((doc) => {
+    void parseDocument(doc, connection, libManager, docsToCompilerResults);
+  });
 });
 
 // The content of a text document has changed. This event is emitted
@@ -135,7 +145,12 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidChangeContent((change) => {
   parseAllRootFolders();
 
-  parseDocument(change.document, connection, libManager, docsToCompilerResults);
+  void parseDocument(
+    change.document,
+    connection,
+    libManager,
+    docsToCompilerResults
+  );
 });
 
 connection.onDidChangeWatchedFiles((_change) => {
@@ -145,9 +160,21 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-addHover(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
+addHover(
+  connection,
+  docsToCompilerResults,
+  documents,
+  compilersToLibs,
+  libManager
+);
 
-addDefinition(connection, docsToCompilerResults, documents, compilersToLibs, libManager);
+addDefinition(
+  connection,
+  docsToCompilerResults,
+  documents,
+  compilersToLibs,
+  libManager
+);
 
 addSemanticTokens(connection, libManager, docsToCompilerResults);
 

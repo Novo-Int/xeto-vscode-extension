@@ -1,30 +1,31 @@
 import {
-  Connection,
-  RenameParams,
-  TextDocuments,
-  TextEdit,
-  WorkspaceEdit,
+  type Connection,
+  type RenameParams,
+  type TextDocuments,
+  type TextEdit,
+  type WorkspaceEdit,
 } from "vscode-languageserver";
-import { ProtoCompiler } from "../compiler/Compiler";
+import { type ProtoCompiler } from "../compiler/Compiler";
 import { renameInDoc } from "../refactor";
-import { TextDocument } from "vscode-languageserver-textdocument";
+import { type TextDocument } from "vscode-languageserver-textdocument";
 import { findProtoByQname } from "../FindProto";
-import { XetoLib } from "../libraries";
-import { getIdentifierLength } from './utils';
+import { type XetoLib } from "../libraries";
+import { getIdentifierLength } from "./utils";
+import { type Proto } from "../compiler/Proto";
 
 export const addRenameSymbol = (
   connection: Connection,
   compiledDocs: Record<string, ProtoCompiler>,
   docs: TextDocuments<TextDocument>,
   compilersToLibs: Map<ProtoCompiler, XetoLib>
-) => {
+): void => {
   function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
     const uri = params.textDocument.uri;
 
     const compiler = compiledDocs[uri];
     const doc = docs.get(params.textDocument.uri);
 
-    if (!compiler || !doc) {
+    if (!compiler || doc == null) {
       return null;
     }
 
@@ -42,10 +43,11 @@ export const addRenameSymbol = (
       return null;
     }
 
-    const proto =
-      (compiler.root && findProtoByQname(protoName, compiler.root)) || null;
+    const proto: Proto | null = compiler.root
+      ? findProtoByQname(protoName, compiler.root)
+      : null;
 
-    if (!proto) {
+    if (proto == null) {
       return null;
     }
 
@@ -54,10 +56,10 @@ export const addRenameSymbol = (
       return null;
     }
 
-    const workspaceEdit = {
-      changes: {},
-    } as {
+    const workspaceEdit: {
       changes: Record<string, TextEdit[]>;
+    } = {
+      changes: {},
     };
 
     workspaceEdit.changes[uri] = [
@@ -94,20 +96,20 @@ export const addRenameSymbol = (
 
       const doc = docs.get(docUri);
 
-      if (!doc) {
+      if (doc == null) {
         return;
       }
 
       const edits = renameInDoc(params, protoName, doc, compiledDocs[docUri]);
 
-      if (edits.length) {
+      if (edits.length > 0) {
         workspaceEdit.changes[docUri] = edits;
       }
     });
 
     //  if proto is part of a lib then we need to add the lib name to it also
     const lib = compilersToLibs.get(compiler);
-    if (lib) {
+    if (lib != null) {
       //  refactor in entire workspace
       Object.keys(compiledDocs).forEach((docUri) => {
         //	skip current doc
@@ -117,7 +119,7 @@ export const addRenameSymbol = (
 
         const doc = docs.get(docUri);
 
-        if (!doc) {
+        if (doc == null) {
           return;
         }
 
@@ -128,7 +130,7 @@ export const addRenameSymbol = (
           compiledDocs[docUri]
         );
 
-        if (edits.length) {
+        if (edits.length > 0) {
           workspaceEdit.changes[docUri] = edits;
         }
       });

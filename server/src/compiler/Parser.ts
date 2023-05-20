@@ -3,38 +3,38 @@ import { Tokenizer } from "./Tokenizer";
 import { FileLoc } from "./FileLoc";
 import { isLower, trimToNull } from "./StringUtils";
 
-import { CompilerError, ErrorTypes } from './Errors';
-import { CompilerLogFunction } from './CompilerErrorType';
+import { CompilerError, ErrorTypes } from "./Errors";
+import { type CompilerLogFunction } from "./CompilerErrorType";
 
 class ParsedProto {
   readonly loc: FileLoc;
   public doc: string | null;
   public name: string | null;
   public traits: Record<string, unknown> = {};
- 
-  constructor (loc: FileLoc) {
+
+  constructor(loc: FileLoc) {
     this.loc = loc;
     this.doc = null;
     this.name = null;
   }
 }
 
-export type TokenWithPosition = {
-  token: Token
-  val: string
-  indexInInput: number
-  line: number
-  col: number
+export interface TokenWithPosition {
+  token: Token;
+  val: string;
+  indexInInput: number;
+  line: number;
+  col: number;
 }
 
-type ProtoOf = {
-  children: unknown[],
+interface ProtoOf {
+  children: unknown[];
 }
 
 export class Parser {
-  private fileLoc: FileLoc;
-  private logErrCB: CompilerLogFunction;
-  private tokenizer: Tokenizer;
+  private readonly fileLoc: FileLoc;
+  private readonly logErrCB: CompilerLogFunction;
+  private readonly tokenizer: Tokenizer;
 
   private prevLoc: FileLoc;
 
@@ -50,9 +50,13 @@ export class Parser {
   private peekCol = 0; // next token col number
   private peekCharIndex = 0; // next char index in the stream
 
-  private _tokenBag: TokenWithPosition[] = [];
+  private readonly _tokenBag: TokenWithPosition[] = [];
 
-  public constructor(input: string, logErrCB: CompilerLogFunction, loc = "input") {
+  public constructor(
+    input: string,
+    logErrCB: CompilerLogFunction,
+    loc = "input"
+  ) {
     this.prevLoc = new FileLoc(loc);
     this.fileLoc = new FileLoc(loc);
     this.logErrCB = logErrCB;
@@ -68,7 +72,9 @@ export class Parser {
     return this._tokenBag;
   }
 
-  public parse(root: Record<string, unknown>) {
+  public parse(
+    root: Record<string, unknown>
+  ): Record<string, unknown> | undefined {
     try {
       const rootProto = new ParsedProto(this.curToLoc());
       rootProto.traits = root;
@@ -82,9 +88,9 @@ export class Parser {
     }
   }
 
-  //Protos
+  // Protos
 
-  private parseProtos(parent: ParsedProto, isMeta: boolean) {
+  private parseProtos(parent: ParsedProto, isMeta: boolean): void {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const child = this.parseProto();
@@ -94,7 +100,7 @@ export class Parser {
     }
   }
 
-  private parseEndOfProto() {
+  private parseEndOfProto(): void {
     if (this.cur === Token.COMMA) {
       this.consume();
       this.skipNewlines();
@@ -136,22 +142,25 @@ export class Parser {
       proto.name = this.consumeName();
       this.consume(Token.COLON);
       this.parseBody(proto);
-    }
-    else if (this.cur === Token.ID && isLower(this.curVal.toString()) && this.peek !== Token.DOT) {
+    } else if (
+      this.cur === Token.ID &&
+      isLower(this.curVal.toString()) &&
+      this.peek !== Token.DOT
+    ) {
       proto.name = this.consumeName();
       proto.traits = {
-        "_is": "sys.Marker"
+        _is: "sys.Marker",
       };
     } else {
       this.parseBody(proto);
     }
-    
+
     this.parseTrailingDoc(proto);
 
     return proto;
   }
 
-  private parseBody(proto: ParsedProto) {
+  private parseBody(proto: ParsedProto): void {
     const a = this.parseIs(proto);
     const meta = this.parseMeta(proto);
     const childrenOrVal = this.parseChildrenOrVal(proto);
@@ -171,17 +180,17 @@ export class Parser {
     if (this.cur === Token.QUESTION) {
       this.consume(Token.QUESTION);
 
-      if (proto.traits['_of']) {
+      if (proto.traits._of) {
         const oldTraits = {
-          _of: proto.traits['_of'],
-          _is: proto.traits['_is']
+          _of: proto.traits._of,
+          _is: proto.traits._is,
         };
 
-        proto.traits['_is'] = 'sys.Maybe';
-        proto.traits['_of'] = oldTraits;
+        proto.traits._is = "sys.Maybe";
+        proto.traits._of = oldTraits;
       } else {
-        proto.traits['_of'] = proto.traits['_is'];
-        proto.traits['_is'] = 'sys.Maybe';
+        proto.traits._of = proto.traits._is;
+        proto.traits._is = "sys.Maybe";
       }
     }
 
@@ -201,7 +210,7 @@ export class Parser {
   }
 
   private parseVal(proto: ParsedProto): boolean {
-    proto.traits["_val"] = this.curVal;
+    proto.traits._val = this.curVal;
     this.consume();
     return true;
   }
@@ -216,20 +225,20 @@ export class Parser {
     const qnameLoc = this.curCharIndex - 1;
     const qname = this.consumeQName();
 
-    if (this.cur === Token.AMP)      return this.parseIsAnd(p, qname);
-    if (this.cur === Token.PIPE)     return this.parseIsOr(p, qname);
+    if (this.cur === Token.AMP) return this.parseIsAnd(p, qname);
+    if (this.cur === Token.PIPE) return this.parseIsOr(p, qname);
     if (this.cur === Token.QUESTION) return this.parseIsMaybe(p, qname);
 
-    p.traits["_is"] = qname;
-    p.traits["_type"] = "sys.Ref";
-    p.traits["_qnameLoc"] = qnameLoc;
+    p.traits._is = qname;
+    p.traits._type = "sys.Ref";
+    p.traits._qnameLoc = qnameLoc;
 
     return true;
   }
 
-  private parseIsAnd(p: ParsedProto, qname: string): boolean{
+  private parseIsAnd(p: ParsedProto, qname: string): boolean {
     const of = {
-      children: []
+      children: [],
     };
 
     this.addToOf(of, qname, undefined, this.prevLoc);
@@ -237,19 +246,25 @@ export class Parser {
     while (this.cur === Token.AMP) {
       this.consume();
       this.skipNewlines();
-      const qname = this.parseIsSimple("Expecting next proto name after '&' and symbol");
+      const qname = this.parseIsSimple(
+        "Expecting next proto name after '&' and symbol"
+      );
       this.addToOf(of, qname, undefined, this.prevLoc);
     }
 
-    p.traits["_is"] = "sys.And";
-    p.traits["_of"] = of;
+    p.traits._is = "sys.And";
+    p.traits._of = of;
 
     return true;
   }
 
-  private parseIsOr(p: ParsedProto, qname: string | undefined = undefined, val: string | undefined = undefined): boolean {
+  private parseIsOr(
+    p: ParsedProto,
+    qname: string | undefined = undefined,
+    val: string | undefined = undefined
+  ): boolean {
     const of = {
-      children: []
+      children: [],
     };
 
     this.addToOf(of, qname, val, this.prevLoc);
@@ -261,21 +276,23 @@ export class Parser {
       if (this.cur.isVal) {
         this.addToOf(of, undefined, this.consumeVal(), this.prevLoc);
       } else {
-        const qname = this.parseIsSimple("Expecting next proto name after '|' or symbol");
+        const qname = this.parseIsSimple(
+          "Expecting next proto name after '|' or symbol"
+        );
         this.addToOf(of, qname, undefined, this.prevLoc);
       }
     }
 
-    p.traits["_is"] = "sys.Or";
-    p.traits["_of"] = of;
+    p.traits._is = "sys.Or";
+    p.traits._of = of;
 
     return true;
   }
 
   private parseIsMaybe(p: ParsedProto, qname: string): boolean {
     this.consume(Token.QUESTION);
-    p.traits["_is"] = "sys.Maybe";
-    p.traits["_of"] = {"_is": qname};
+    p.traits._is = "sys.Maybe";
+    p.traits._of = { _is: qname };
     return true;
   }
 
@@ -287,23 +304,28 @@ export class Parser {
     return this.consumeQName();
   }
 
-  private addToOf(of: ProtoOf, qname: string | undefined = undefined, val: string | undefined = undefined, loc: FileLoc | undefined = undefined) {
+  private addToOf(
+    of: ProtoOf,
+    qname: string | undefined = undefined,
+    val: string | undefined = undefined,
+    loc: FileLoc | undefined = undefined
+  ): void {
     const child: Record<string, any> = {};
 
     of.children.push(child);
 
     if (qname) {
-      child["_is"] = qname;
+      child._is = qname;
     }
 
     if (val) {
-      child["_val"] = val;
+      child._val = val;
     }
 
-    if (loc) {
-      child["_loc"] = {
-        "_is": "sys.Str",
-        "_val": loc
+    if (loc != null) {
+      child._loc = {
+        _is: "sys.Str",
+        _val: loc,
       };
     }
   }
@@ -322,7 +344,7 @@ export class Parser {
     this.parseProtos(proto, isMeta);
 
     if (this.cur !== close) {
-      this.err(`Unmatched closing ${close}`, loc);
+      this.err(`Unmatched closing ${close.toString()}`, loc);
     }
 
     this.consume(close);
@@ -330,10 +352,14 @@ export class Parser {
     return true;
   }
 
-  //////////////////////////////////////////////////////////////////////////
+  /// ///////////////////////////////////////////////////////////////////////
   // AST Manipulation
-  //////////////////////////////////////////////////////////////////////////
-  private addToParent(parent: ParsedProto, child: ParsedProto, isMeta: boolean) {
+  /// ///////////////////////////////////////////////////////////////////////
+  private addToParent(
+    parent: ParsedProto,
+    child: ParsedProto,
+    isMeta: boolean
+  ): void {
     this.addDoc(child);
     this.addLoc(child);
 
@@ -348,8 +374,7 @@ export class Parser {
         name = "_" + name;
         //  this may seem like a hack, because it is,
         //  but there is no change of collision with user provided names
-        child.traits['#isMeta'] = {
-        };
+        child.traits["#isMeta"] = {};
       }
       //  we may have an optional with meta
       if (parent.traits[name] && name !== "_of") {
@@ -358,13 +383,16 @@ export class Parser {
     }
 
     if (name === "_of" && parent.traits[name]) {
-      (parent.traits[name] as Record<string, any>)["_of"] = child.traits;
+      (parent.traits[name] as Record<string, any>)._of = child.traits;
     } else {
       parent.traits[name] = child.traits;
     }
   }
 
-  private generateDuplicateDefErr(parent: ParsedProto, child: ParsedProto): void {
+  private generateDuplicateDefErr(
+    parent: ParsedProto,
+    child: ParsedProto
+  ): void {
     if (!child.name) {
       return;
     }
@@ -374,37 +402,45 @@ export class Parser {
     const existingLoc = (parent.traits[child.name] as any)._loc._val as FileLoc;
     const newLoc = child.loc;
 
-    const firstError = new CompilerError(`Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(newLoc, 1).toString()}`,
+    const firstError = new CompilerError(
+      `Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(
+        newLoc,
+        1
+      ).toString()}`,
       ErrorTypes.DUPLICATED_SYMBOL,
       existingLoc,
-      {...existingLoc, col: existingLoc.col + length}
+      { ...existingLoc, col: existingLoc.col + length }
     );
 
-    const secondError = new CompilerError(`Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(existingLoc, 1).toString()}`,
+    const secondError = new CompilerError(
+      `Duplicate slot name ${child.name} at ${FileLoc.newWithOffset(
+        existingLoc,
+        1
+      ).toString()}`,
       ErrorTypes.DUPLICATED_SYMBOL,
       newLoc,
-      {...newLoc, col: newLoc.col + length}
+      { ...newLoc, col: newLoc.col + length }
     );
 
     this.logErrCB(firstError);
     this.logErrCB(secondError);
   }
 
-  private addDoc(p: ParsedProto) {
+  private addDoc(p: ParsedProto): void {
     if (p.doc == null) return;
 
-    p.traits["_doc"] = {
-      "_is": "sys.Str",
-      "_val": p.doc
+    p.traits._doc = {
+      _is: "sys.Str",
+      _val: p.doc,
     };
   }
 
-  private addLoc(p: ParsedProto) {
+  private addLoc(p: ParsedProto): void {
     if (this.fileLoc === FileLoc.unknown) return;
 
-    p.traits["_loc"] = {
-      "_is": "sys.Str",
-      "_val": p.loc
+    p.traits._loc = {
+      _is: "sys.Str",
+      _val: p.loc,
     };
   }
 
@@ -420,9 +456,9 @@ export class Parser {
     throw new Error("To many children");
   }
 
-  //////////////////////////////////////////////////////////////////////////
+  /// ///////////////////////////////////////////////////////////////////////
   // Doc
-  //////////////////////////////////////////////////////////////////////////
+  /// ///////////////////////////////////////////////////////////////////////
 
   private parseLeadingDoc(): string | null {
     let doc: string | null = null;
@@ -438,7 +474,7 @@ export class Parser {
       // parse one or more lines of comments
       doc = "";
       while (this.cur === Token.COMMENT) {
-        doc += `${this.curVal.toString()}\n`;
+        doc += `${this.curVal.toString() as string}\n`;
         this.consume();
         this.consume(Token.NL);
       }
@@ -454,7 +490,7 @@ export class Parser {
     return doc;
   }
 
-  private parseTrailingDoc(proto: ParsedProto) {
+  private parseTrailingDoc(proto: ParsedProto): void {
     if (this.cur === Token.COMMENT) {
       const doc = trimToNull(this.curVal.toString());
       if (doc != null && proto.doc == null) proto.doc = doc;
@@ -462,9 +498,9 @@ export class Parser {
     }
   }
 
-  //////////////////////////////////////////////////////////////////////////
+  /// ///////////////////////////////////////////////////////////////////////
   // Char Reads
-  //////////////////////////////////////////////////////////////////////////
+  /// ///////////////////////////////////////////////////////////////////////
 
   private skipNewlines(): boolean {
     if (this.cur !== Token.NL) return false;
@@ -472,13 +508,20 @@ export class Parser {
     return true;
   }
 
-  private verify(expected: Token) {
+  private verify(expected: Token): void {
     if (this.cur !== expected)
-      throw new Error(`Expected ${expected} not ${this.cur.toString()}`);
+      throw new Error(
+        `Expected ${expected.toString()} not ${this.cur.toString()}`
+      );
   }
 
   private curToLoc(): FileLoc {
-    return new FileLoc(this.fileLoc.file, this.curLine, this.curCol, this.tokenizer.charIndex);
+    return new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol,
+      this.tokenizer.charIndex
+    );
   }
 
   private consumeQName(): string {
@@ -507,10 +550,15 @@ export class Parser {
     return val;
   }
 
-  private consume(expected: Token | undefined = undefined) {
+  private consume(expected: Token | undefined = undefined): void {
     if (expected !== undefined) this.verify(expected);
 
-    this.prevLoc = new FileLoc(this.fileLoc.file, this.curLine, this.curCol, this.curCharIndex);
+    this.prevLoc = new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol,
+      this.curCharIndex
+    );
 
     this.cur = this.peek;
     this.curVal = this.peekVal;
@@ -533,7 +581,7 @@ export class Parser {
       this.peekCol = this.tokenizer.col;
       this.peekCharIndex = this.tokenizer.charIndex;
 
-      if (this.tokenizer.currentError) {
+      if (this.tokenizer.currentError != null) {
         this.logErrCB(this.tokenizer.currentError);
       }
     } catch (e: any) {

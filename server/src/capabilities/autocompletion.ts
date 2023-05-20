@@ -1,30 +1,30 @@
 import {
-  CompletionItem,
+  type CompletionItem,
   CompletionItemKind,
-  CompletionParams,
-  Connection,
-  TextDocument,
-  TextDocuments,
+  type CompletionParams,
+  type Connection,
+  type TextDocuments,
 } from "vscode-languageserver";
 
 import { getIdentifierForPosition } from "./utils";
 
 import { findChildrenOf } from "../FindProto";
-import { LibraryManager } from "../libraries";
-import { ProtoCompiler } from "../compiler/Compiler";
+import { type LibraryManager } from "../libraries";
+import { type ProtoCompiler } from "../compiler/Compiler";
+import { type TextDocument } from "vscode-languageserver-textdocument";
 
 export const addAutoCompletion = (
   connection: Connection,
   libManager: LibraryManager,
   compiledDocs: Record<string, ProtoCompiler>,
   docs: TextDocuments<TextDocument>
-) => {
+): void => {
   function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
     // let try to find the identifier for this position
     const compiledDocument = compiledDocs[params.textDocument.uri];
     const doc = docs.get(params.textDocument.uri);
 
-    if (!compiledDocument || !doc) {
+    if (!compiledDocument || doc == null) {
       return [];
     }
 
@@ -35,7 +35,7 @@ export const addAutoCompletion = (
     }
 
     let options =
-      (compiledDocument.root &&
+      (compiledDocument.root != null &&
         findChildrenOf(partialIdentifier, compiledDocument.root)) ||
       [];
 
@@ -51,12 +51,12 @@ export const addAutoCompletion = (
 
         lib = libManager.getLib(libName.join("."));
 
-        if (lib) {
+        if (lib != null) {
           //	get compilers for files that have this lib
           const identifierWithoutLib = parts.slice(currentSize).join(".");
 
           options = findChildrenOf(identifierWithoutLib, lib.rootProto);
-          if (options.length) {
+          if (options.length > 0) {
             break;
           }
         }
