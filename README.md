@@ -23,20 +23,54 @@ The extesion can be used both in:
 ## Features
 
 - Code editor features:
+
   - Syntax highlighting: Get syntax highlights for the `XETO` language
   - Folding: fold code around XETO constructs like `{` and `<`
   - Autoclosing: generate closing constructs for `{`, `<` and `'`
   - Sematic tokens support: change colors for tokens based on their semantics
+
+    ![](./docs/images/syntax.gif)
+
 - Diagnostics: Receive real-time errors regarding syntax problems
+
+  ![](./docs/images/diagnostics.gif)
+
 - Code completion proposals: Suggestions regarding properties on existing protos
+
+  ![](./docs/images/completion.gif)
+
 - Hover information: Show available docs for symbols
+
+  ![](./docs/images/hover.gif)
+
 - Show Definition of a Symbol: Peek the definition of a symbol defined either in the current workspace or in an external library
+
+  ![](./docs/images/peek.gif)
+
 - Go to definition of a Symbol: Navigation to symbols, both in the current workspace and in the external libraries
+
+  ![](./docs/images/goto-def.gif)
+
 - Formatting: Automatically format code according to language-specific rules.
+
+  ![](./docs/images/format.gif)
+
 - Rename symbol: Rename a symbol accross the entire workspace
+
+  ![](./docs/images/rename.gif)
+
 - Document symbols: Quickly search for symbols defined in the current file
+
+  ![](./docs/images/doc-symbols.gif)
+
 - Workspace symbols: Quickly search for symbols defined in the current workspace
+
+  ![](./docs/images/workspace-symbols.gif)
+
 - Document outline: Provides a fast way to see all the symbols defined in the current file and provides navigation the their definition
+
+  ![](./docs/images/doc-outline.gif)
+
 - Support for external libraries:
   - Define folders or files that are external to the workspace and use the symbols define there
   - Hover, Show Definition and Go to Definition work with these
