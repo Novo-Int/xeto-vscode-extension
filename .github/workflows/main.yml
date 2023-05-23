@@ -13,9 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
-    defaults:
-      run:
-        working-directory: ./vscode-extension
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -33,9 +30,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    defaults:
-      run:
-        working-directory: ./vscode-extension
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -47,7 +41,7 @@ jobs:
       - run: npm run compile
       - run: npm install -g vsce
       - name: Generate extension package
-        run: vsce package -o ../xeto-extension.vsix
+        run: vsce package -o ./xeto-extension.vsix
       - name: Push extension to release
         uses: svenstaro/upload-release-action@v2
         with:

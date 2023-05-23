@@ -1,1 +1,0 @@
-# LanguageServer for Xeto files

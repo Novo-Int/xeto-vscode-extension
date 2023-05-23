@@ -1,6 +1,13 @@
 build/**
 node_modules/**
 **/dist/**
-vscode-extension/.vscode-test-web/**
+.vscode-test-web/**
+.vscode-test/**
+**/node_modules/**
+server/out/**
+client/out/**
+client/dist/**
+server/dist/**
+
 
 */.DS_Store

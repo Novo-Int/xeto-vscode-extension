@@ -5,17 +5,9 @@
 		"lib": ["es2020", "WebWorker"],
 		"outDir": "out",
 		"rootDir": "src",
+		"strict": true,
 		"sourceMap": true
 	},
-	"include": [
-		"src"
-	],
-	"exclude": [
-		"node_modules",
-		".vscode-test"
-	],
-	"references": [
-		{ "path": "./client" },
-		{ "path": "./server" }
-	]
+	"include": ["src"],
+	"exclude": ["node_modules", ".vscode-test"]
 }
