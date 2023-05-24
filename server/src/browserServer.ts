@@ -132,13 +132,13 @@ connection.onInitialize((params: InitializeParams) => {
     str.replace(/\/$/, "")
   );
 
-  parseAllRootFolders();
-
   return generateInitResults(params);
 });
 
 connection.onInitialized((): InitializeResult => {
   void onInitialized(connection, libManager, docsToCompilerResults);
+
+  parseAllRootFolders();
 
   return {
     capabilities: {},
@@ -155,8 +155,6 @@ connection.onDidChangeConfiguration((change) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-  parseAllRootFolders();
-
   void parseDocument(
     change.document,
     connection,
