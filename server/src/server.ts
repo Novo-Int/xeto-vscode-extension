@@ -32,6 +32,7 @@ import {
   addDefinition,
   addHover,
 } from "./capabilities";
+import { EVENT_TYPE, eventBus } from "./events";
 VARS.env = "NODE";
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -88,6 +89,8 @@ const addWorkspaceRootToWatch = async (
 };
 
 const parseAllRootFolders = (): void => {
+  let noLoaded = 0;
+
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach((folderPath) => {
@@ -111,6 +114,11 @@ const parseAllRootFolders = (): void => {
                 libManager,
                 docsToCompilerResults
               );
+
+              noLoaded++;
+              if (noLoaded >= rootFolders.filter(Boolean).length) {
+                eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+              }
             });
           });
       });
