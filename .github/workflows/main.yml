@@ -7,6 +7,8 @@ on:
     types:
     - created
 
+name: Build
+
 jobs:
   build:
     if: startsWith(github.ref, 'refs/tags/') == false
