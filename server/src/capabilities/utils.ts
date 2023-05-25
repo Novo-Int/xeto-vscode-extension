@@ -8,7 +8,7 @@ import { type ProtoCompiler } from "../compiler/Compiler";
 import { type TextDocuments } from "vscode-languageserver";
 import { type LibraryManager, type XetoLib } from "../libraries";
 
-const identifierCharRegexp = /[a-zA-Z0-9_. \t]/;
+const identifierCharRegexp = /[a-zA-Z0-9_. :\t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
 export function getIdentifierForPosition(
@@ -25,6 +25,16 @@ export function getIdentifierForPosition(
     position >= -1 &&
     text.charAt(position).match(identifierCharRegexp) != null
   ) {
+    //  need to take special care about ::
+    if (text.charAt(position) === ":") {
+      if (text.charAt(position - 1) !== ":") {
+        break;
+      } else {
+        identifier = ":" + identifier;
+        position--;
+      }
+    }
+
     identifier = text.charAt(position) + identifier;
     position--;
   }
@@ -57,7 +67,7 @@ export function getIdentifierLength(doc: TextDocument, pos: Position): number {
 export function getLargestIdentifierForPosition(
   doc: TextDocument,
   pos: Position
-): string[] {
+): string {
   let position = doc.offsetAt(pos);
   const text = doc.getText();
 
@@ -73,6 +83,16 @@ export function getLargestIdentifierForPosition(
     position >= -1 &&
     text.charAt(position).match(identifierCharRegexp) != null
   ) {
+    //  need to take special care about ::
+    if (text.charAt(position) === ":") {
+      if (text.charAt(position - 1) !== ":") {
+        break;
+      } else {
+        identifier = ":" + identifier;
+        position--;
+      }
+    }
+
     identifier = text.charAt(position) + identifier;
     position--;
   }
@@ -90,7 +110,7 @@ export function getLargestIdentifierForPosition(
 
   identifier = identifier.trim().replace(/[\n\t]/g, "");
 
-  return identifier.split(".");
+  return identifier;
 }
 
 interface ProtoFromLocInput {
@@ -119,7 +139,7 @@ export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
 
   const proto =
     compiledDocument.root &&
-    findProtoByQname(identifier.join("."), compiledDocument.root);
+    findProtoByQname(identifier, compiledDocument.root);
 
   if (proto != null) {
     return proto;
@@ -128,17 +148,14 @@ export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
     const lib = input.compilersToLibs.get(compiledDocument);
 
     if (lib != null) {
-      const proto = findProtoByQname(identifier.join("."), lib.rootProto);
+      const proto = findProtoByQname(identifier, lib.rootProto);
 
       if (proto != null) {
         return proto;
       }
     }
 
-    const proto = input.libManager.findProtoByQName(
-      identifier.join("."),
-      lib?.deps
-    );
+    const proto = input.libManager.findProtoByQName(identifier, lib?.deps);
 
     return proto;
   }
