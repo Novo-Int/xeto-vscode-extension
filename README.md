@@ -1,5 +1,5 @@
 # XETO Extension for VSCode
-
+[![GitHub CI](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml/badge.svg)](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/license-bsd--3--clause-brightgreen)](https://opensource.org/license/bsd-3-clause/)
 
 ## Overview
@@ -18,7 +18,7 @@ The XETO Extension for VSCode provides language support and code editing feature
 The extesion can be used both in:
 
 - desktop environment (`VisualCode`)
-- web environment, as a web extension (compatible with [vscode.dev](https://vscode.dev) and github.dev)
+- web environment, as a web extension (compatible with [vscode.dev](https://vscode.dev) and [github.dev](https://github.dev))
 
 ## Features
 
@@ -29,7 +29,7 @@ The extesion can be used both in:
   - Autoclosing: generate closing constructs for `{`, `<` and `'`
   - Sematic tokens support: change colors for tokens based on their semantics
 
-    ![](./docs/images/syntax.gif)
+  ![](./docs/images/syntax.gif)
 
 - Diagnostics: Receive real-time errors regarding syntax problems
 
