@@ -544,6 +544,11 @@ export class Parser {
       qname += "." + this.consumeName();
     }
 
+    if (this.cur === Token.DOUBLE_COLON) {
+      this.consume();
+      qname += "::" + this.consumeName();
+    }
+
     return qname;
   }
 

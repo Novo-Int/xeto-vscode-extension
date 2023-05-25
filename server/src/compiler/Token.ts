@@ -6,6 +6,7 @@ export class Token {
   // operators
   static DOT = new Token(".");
   static COLON = new Token(":");
+  static DOUBLE_COLON = new Token("::");
   static COMMA = new Token(",");
   static LT = new Token("<");
   static GT = new Token(">");
