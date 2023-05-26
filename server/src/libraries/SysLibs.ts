@@ -90,6 +90,11 @@ const processSysLibNo = async (
       return;
     }
 
+    eventBus.fire(EVENT_TYPE.URI_PARSED, {
+      uri: uri.replace("https", "xeto"),
+      lib,
+    });
+
     Object.entries(compiler.root.children).forEach(([name, proto]) => {
       lib.addChild(name, proto);
     });

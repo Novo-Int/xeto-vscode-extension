@@ -14,6 +14,8 @@ import {
 import { type FileLoc } from "./compiler/FileLoc";
 import { type Proto } from "./compiler/Proto";
 
+const uriToLibs = new Map<string, XetoLib>();
+
 let ARE_LIBS_LOADED = false;
 let noLoaded = 0;
 
@@ -28,6 +30,9 @@ const libsLoadedCallback = (): void => {
 eventBus.addListener(EVENT_TYPE.EXTERNAL_LIBS_LOADED, libsLoadedCallback);
 eventBus.addListener(EVENT_TYPE.SYS_LIBS_LOADED, libsLoadedCallback);
 eventBus.addListener(EVENT_TYPE.WORKSPACE_SCANNED, libsLoadedCallback);
+eventBus.addListener(EVENT_TYPE.URI_PARSED, (type, args) => {
+  uriToLibs.set(args.uri, args.lib);
+});
 
 function fileLocToDiagPosition(loc: FileLoc): Position {
   return {
@@ -163,7 +168,13 @@ export const parseDocument = async (
     if (ARE_LIBS_LOADED) {
       // resolve refs
       const missingRefs: Proto[] = [];
-      compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
+      const lib = uriToLibs.get(textDocument.uri);
+      compiler.root?.resolveRefTypes(
+        compiler.root,
+        libManager,
+        lib,
+        missingRefs
+      );
 
       const missingRefsDiagnostics = missingRefs.map((proto) => ({
         severity: DiagnosticSeverity.Error,
