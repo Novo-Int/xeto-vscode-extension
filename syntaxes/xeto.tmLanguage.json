@@ -1,179 +1,162 @@
 {
-	"scopeName": "source.xeto",
-	"patterns": [
-		{ "include": "#file" }
-	],
-	"repository": {
-	  "file": {
-		"patterns": [
-			{ "include": "#protos"}
-		]
-	  },
-	  "protoMeta": {
-		"begin": "<",
-		"end": ">",
-		"beginCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"endCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"patterns": [
-			{ "include": "#protos"}
-		]
-	  },
-	  "protoData": {
-		"name": "xeto.proto.data",
-		"begin": "{",
-		"end": "}",
-		"beginCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"endCaptures": {
-			"0": { "name": "keyword.control" }
-		},
-		"patterns": [
-			{ "include": "#protos"}
-		]
-	  },
-	  "protos": {
-		"name": "xeto.protos.",
-		"patterns": [
-			{ "include": "#proto" },
-			{ "match": ",", "name": "constant.character"}
-		]
-	  },
-	  "protoUnion": {
-		"name": "xeto.proto.union",
-		"patterns": [
-			{ "match": "\\|",
-				"name": "xeto.proto.operator.union",
-				"captures": {
-					"0": { "name": "keyword.control" }
-				}
-			},
-			{ "include": "#protoSimple" }
-		]
-	  },
-	  "protoIntersection" :{
-		"name": "xeto.proto.intersection",
-		"patterns": [
-			{ "match": "&",
-				"name": "xeto.proto.operator.intersection",
-				"captures": {
-					"0": { "name": "keyword.control" }
-				}
-			},
-			{ "include": "#protoUnion" }
-		]
-	  },
-	  "proto": {
-		"name": "xeto.proto.container",
-		"patterns": [
-			{ "include": "#leadingDoc" },
-			{ "include": "#protoIntersection"},
-			{ "include": "#trailingDoc"}
-		]
-	  },
-	  "markerName": {
-		"match": "[a-z][a-zA-Z0-9_]*",
-		"name": "xeto.name.marker",
-		"captures": {
-			"0": {"name": "entity.name.tag"}
-		}
-	  },
-	  "name": {
-		"match": "(([a-zA-Z][a-zA-Z0-9_]*)\\s*(:))|([a-zA-Z][a-zA-Z0-9_]*(?<!:))",
-		"name": "xeto.name",
-		"captures": {
-			"2": {"name": "entity.name.tag"},
-			"3": {"name": "keyword.operator"},
-			"4": {"name": "entity.name.type"}
-		}
-	  },
-	  "qname": {
-		"match": "([a-zA-Z][a-zA-Z0-9_]*)(\\.[a-zA-Z][a-zA-Z0-9_]*)+",
-		"name": "xeto.qname",
-		"captures": {
-			"0": {"name": "entity.name.type"}
-		}
-	  },
-	  "protoSimple": {
-		"name": "xeto.proto.simple",
-		"patterns": [
-			{ "include": "#protoUnnamed" },
-			{ "include": "#protoOptional" },
-			{ "include": "#protoMarker" },
-			{ "include": "#protoNamed" }
-		]
-	  },
-	  "protoMarker": {
-		"name": "xeto.proto.marker",
-		"patterns": [
-			{ "include": "#markerName" }
-		]
-	  },
-	  "protoVal": {
-		"name": "xeto.proto.val",
-		"patterns": [
-			{ 
-				"match": "\"[^\"]*\"", 
-				"name": "string.quoted.double"
-			},
-			{
-				"begin": "\"",
-				"end": "",
-				"name": "string.quoted.double"
-			}
-		]
-	  },
-	  "protoType": {
-		"name": "xeto.proto.type",
-		"patterns": [
-			{ "include": "#qname" }
-		]
-	  },
-	  "lineComment": {
-		"match": "\\s*//.*$",
-		"name": "comment.line.double-slash"
-	  },
-	  "trailingDoc": {
-		"patterns": [
-			{ "include": "#lineComment" }
-		]
-	  },
-	  "leadingDoc": {
-		"patterns": [
-			{ "include": "#lineComment" }
-		]
-	  },
-	  "protoUnnamed": {
-		"name": "xeto.proto.unnamed",
-		"patterns": [
-			{ "include": "#protoMeta"},
-			{ "include": "#protoData"},
-			{ "include": "#protoType"},
-			{ "include": "#protoVal"}
-		]
-	  },
-	  "optionalOperator": {
-		"match": "\\?:",
-		"name": "keyword.operator"
-	  },
-	  "protoOptional": {
-		"name": "xeto.proto.optional",
-		"patterns": [
-			{ "include": "#qname"},
-			{ "include": "#optionalOperator"},
-			{ "include": "#protoUnnamed"}
-		]
-	  },
-	  "protoNamed": {
-		"name": "xeto.proto.named",
-		"patterns": [
-			{ "include": "#name" },
-			{ "include": "#protoUnnamed"}
-		]
-	  }
-	}
+  "scopeName": "source.xeto",
+  "patterns": [{ "include": "#file" }],
+  "repository": {
+    "file": {
+      "patterns": [{ "include": "#protos" }]
+    },
+    "protoMeta": {
+      "begin": "<",
+      "end": ">",
+      "beginCaptures": {
+        "0": { "name": "keyword.control" }
+      },
+      "endCaptures": {
+        "0": { "name": "keyword.control" }
+      },
+      "patterns": [{ "include": "#protos" }]
+    },
+    "protoData": {
+      "name": "xeto.proto.data",
+      "begin": "{",
+      "end": "}",
+      "beginCaptures": {
+        "0": { "name": "keyword.control" }
+      },
+      "endCaptures": {
+        "0": { "name": "keyword.control" }
+      },
+      "patterns": [{ "include": "#protos" }]
+    },
+    "protos": {
+      "name": "xeto.protos.",
+      "patterns": [
+        { "include": "#proto" },
+        { "match": ",", "name": "constant.character" }
+      ]
+    },
+    "protoUnion": {
+      "name": "xeto.proto.union",
+      "patterns": [
+        {
+          "match": "\\|",
+          "name": "xeto.proto.operator.union",
+          "captures": {
+            "0": { "name": "keyword.control" }
+          }
+        },
+        { "include": "#protoSimple" }
+      ]
+    },
+    "protoIntersection": {
+      "name": "xeto.proto.intersection",
+      "patterns": [
+        {
+          "match": "&",
+          "name": "xeto.proto.operator.intersection",
+          "captures": {
+            "0": { "name": "keyword.control" }
+          }
+        },
+        { "include": "#protoUnion" }
+      ]
+    },
+    "proto": {
+      "name": "xeto.proto.container",
+      "patterns": [
+        { "include": "#leadingDoc" },
+        { "include": "#protoIntersection" },
+        { "include": "#trailingDoc" }
+      ]
+    },
+    "markerName": {
+      "match": "[a-z][a-zA-Z0-9_]*(?=\\s*:[^:])",
+      "name": "xeto.name.marker",
+      "captures": {
+        "0": { "name": "entity.name.tag" }
+      }
+    },
+    "name": {
+      "match": "(([a-zA-Z][a-zA-Z0-9_]*)\\s*(:(?!:)))",
+      "name": "xeto.name",
+      "captures": {
+        "2": { "name": "entity.name.tag" },
+        "3": { "name": "keyword.operator" },
+        "4": { "name": "entity.name.type" }
+      }
+    },
+    "qname": {
+      "match": "([a-zA-Z][a-zA-Z0-9_]*)(\\.[a-zA-Z][a-zA-Z0-9_]*)*(::[a-zA-Z][a-zA-Z0-9_]*)?",
+      "name": "xeto.qname",
+      "captures": {
+        "0": { "name": "entity.name.type" }
+      }
+    },
+    "protoSimple": {
+      "name": "xeto.proto.simple",
+      "patterns": [
+        { "include": "#protoMarker" },
+        { "include": "#protoUnnamed" },
+        { "include": "#protoOptional" },
+        { "include": "#protoNamed" }
+      ]
+    },
+    "protoMarker": {
+      "name": "xeto.proto.marker",
+      "patterns": [{ "include": "#markerName" }]
+    },
+    "protoVal": {
+      "name": "xeto.proto.val",
+      "patterns": [
+        {
+          "match": "\"[^\"]*\"",
+          "name": "string.quoted.double"
+        },
+        {
+          "begin": "\"",
+          "end": "",
+          "name": "string.quoted.double"
+        }
+      ]
+    },
+    "protoType": {
+      "name": "xeto.proto.type",
+      "patterns": [{ "include": "#qname" }]
+    },
+    "lineComment": {
+      "match": "\\s*//.*$",
+      "name": "comment.line.double-slash"
+    },
+    "trailingDoc": {
+      "patterns": [{ "include": "#lineComment" }]
+    },
+    "leadingDoc": {
+      "patterns": [{ "include": "#lineComment" }]
+    },
+    "protoUnnamed": {
+      "name": "xeto.proto.unnamed",
+      "patterns": [
+        { "include": "#protoMeta" },
+        { "include": "#protoData" },
+        { "include": "#protoType" },
+        { "include": "#protoVal" }
+      ]
+    },
+    "optionalOperator": {
+      "match": "\\?:",
+      "name": "keyword.operator"
+    },
+    "protoOptional": {
+      "name": "xeto.proto.optional",
+      "patterns": [
+        { "include": "#qname" },
+        { "include": "#optionalOperator" },
+        { "include": "#protoUnnamed" }
+      ]
+    },
+    "protoNamed": {
+      "name": "xeto.proto.named",
+      "patterns": [{ "include": "#name" }, { "include": "#protoUnnamed" }]
+    }
   }
+}
