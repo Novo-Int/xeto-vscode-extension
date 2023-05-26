@@ -61,7 +61,13 @@ export class LibraryManager {
     }
 
     if (!qname.includes(Token.DOUBLE_COLON.toString())) {
-      return null;
+      const lib = this.getLib(qname);
+
+      if (!lib) {
+        return null;
+      }
+
+      return findProtoByQname("", lib.rootProto);
     }
 
     const split = qname.split(Token.DOUBLE_COLON.toString());
