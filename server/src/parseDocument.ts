@@ -14,7 +14,7 @@ import {
 import { type FileLoc } from "./compiler/FileLoc";
 import { type Proto } from "./compiler/Proto";
 
-const uriToLibs = new Map<string, XetoLib>();
+export const uriToLibs = new Map<string, XetoLib>();
 
 let ARE_LIBS_LOADED = false;
 let noLoaded = 0;

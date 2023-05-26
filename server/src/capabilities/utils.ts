@@ -118,7 +118,7 @@ interface ProtoFromLocInput {
   pos: Position;
   compiledDocs: Record<string, ProtoCompiler>;
   documents: TextDocuments<TextDocument>;
-  compilersToLibs: Map<ProtoCompiler, XetoLib>;
+  uriToLibs: Map<string, XetoLib>;
   libManager: LibraryManager;
 }
 
@@ -145,7 +145,7 @@ export function getProtoFromFileLoc(input: ProtoFromLocInput): Proto | null {
     return proto;
   } else {
     // 	search in the files lib first
-    const lib = input.compilersToLibs.get(compiledDocument);
+    const lib = input.uriToLibs.get(compiledDocument.sourceUri);
 
     if (lib != null) {
       const proto = findProtoByQname(identifier, lib.rootProto);

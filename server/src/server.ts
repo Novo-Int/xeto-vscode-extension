@@ -21,7 +21,7 @@ import { LibraryManager } from "./libraries/";
 
 import { generateInitResults, onInitialized } from "./init";
 
-import { compilersToLibs, parseDocument } from "./parseDocument";
+import { compilersToLibs, parseDocument, uriToLibs } from "./parseDocument";
 
 import {
   addAutoCompletion,
@@ -173,19 +173,13 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-addHover(
-  connection,
-  docsToCompilerResults,
-  documents,
-  compilersToLibs,
-  libManager
-);
+addHover(connection, docsToCompilerResults, documents, uriToLibs, libManager);
 
 addDefinition(
   connection,
   docsToCompilerResults,
   documents,
-  compilersToLibs,
+  uriToLibs,
   libManager
 );
 

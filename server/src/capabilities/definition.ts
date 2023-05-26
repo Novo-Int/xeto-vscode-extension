@@ -13,7 +13,7 @@ export const addDefinition = (
   connection: Connection,
   compiledDocs: Record<string, ProtoCompiler>,
   documents: TextDocuments<TextDocument>,
-  compilersToLibs: Map<ProtoCompiler, XetoLib>,
+  uriToLibs: Map<string, XetoLib>,
   libManager: LibraryManager
 ): void => {
   function handleDefinition(params: DefinitionParams): Definition | null {
@@ -22,7 +22,7 @@ export const addDefinition = (
       pos: params.position,
       compiledDocs,
       documents,
-      compilersToLibs,
+      uriToLibs,
       libManager,
     });
 
