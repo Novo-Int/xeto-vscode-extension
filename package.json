@@ -65,6 +65,10 @@
             "bold": true,
             "underline": false,
             "italic": true
+          },
+          "namespace": {
+            "foreground": "#002fff",
+            "bold": true
           }
         }
       }
