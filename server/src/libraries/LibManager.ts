@@ -60,11 +60,19 @@ export class LibraryManager {
       }
     }
 
+    //  no explicit lib
     if (!qname.includes(Token.DOUBLE_COLON.toString())) {
       const lib = this.getLib(qname);
 
       if (!lib) {
-        return null;
+        //  let search in sys lib
+        const sysLib = this.getLib("sys");
+
+        if (!sysLib) {
+          return null;
+        }
+
+        return findProtoByQname(qname, sysLib.rootProto);
       }
 
       return findProtoByQname("", lib.rootProto);
