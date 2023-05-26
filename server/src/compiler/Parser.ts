@@ -234,7 +234,13 @@ export class Parser {
 
     if (this.cur !== Token.ID) return false;
 
-    const qnameLoc = this.curCharIndex - 1;
+    // const qnameLoc = this.curCharIndex - 1;
+    const qnameLoc = new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol - 1,
+      this.curCharIndex - 1
+    );
     const qname = this.consumeQName();
 
     if (this.cur === Token.AMP) return this.parseIsAnd(p, qname);

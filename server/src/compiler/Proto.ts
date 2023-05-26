@@ -25,7 +25,7 @@ export class Proto {
   public readonly name: string;
   public readonly type: string;
   public readonly loc: FileLoc;
-  public qnameLoc = 0;
+  public qnameLoc: FileLoc | null = null;
   public initialType = "";
 
   //	alias link to another Proto
