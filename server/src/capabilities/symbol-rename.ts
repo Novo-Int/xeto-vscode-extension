@@ -1,7 +1,6 @@
 import {
   type Connection,
   type RenameParams,
-  type TextDocuments,
   type TextEdit,
   type WorkspaceEdit,
 } from "vscode-languageserver";
@@ -16,7 +15,7 @@ import { type Proto } from "../compiler/Proto";
 export const addRenameSymbol = (
   connection: Connection,
   compiledDocs: Record<string, ProtoCompiler>,
-  docs: TextDocuments<TextDocument>,
+  docs: Map<string, TextDocument>,
   compilersToLibs: Map<ProtoCompiler, XetoLib>
 ): void => {
   function onSymbolRename(params: RenameParams): WorkspaceEdit | null {
@@ -125,7 +124,7 @@ export const addRenameSymbol = (
 
         const edits = renameInDoc(
           params,
-          lib.name + "." + protoName,
+          lib.name + "::" + protoName,
           doc,
           compiledDocs[docUri]
         );

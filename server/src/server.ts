@@ -45,6 +45,7 @@ const documents = new TextDocuments<TextDocument>(TextDocument);
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
+const uriToTextDocuments = new Map<string, TextDocument>();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -108,6 +109,8 @@ const parseAllRootFolders = (): void => {
                 content.toString()
               );
 
+              uriToTextDocuments.set(file, textDocument);
+
               void parseDocument(
                 textDocument,
                 connection,
@@ -153,6 +156,8 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidChangeContent((change) => {
   parseAllRootFolders();
 
+  uriToTextDocuments.set(change.document.uri, change.document);
+
   void parseDocument(
     change.document,
     connection,
@@ -190,7 +195,12 @@ addSymbols(connection, docsToCompilerResults);
 
 addFormatting(connection, documents, docsToCompilerResults);
 
-addRenameSymbol(connection, docsToCompilerResults, documents, compilersToLibs);
+addRenameSymbol(
+  connection,
+  docsToCompilerResults,
+  uriToTextDocuments,
+  compilersToLibs
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
