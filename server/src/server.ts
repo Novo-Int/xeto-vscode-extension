@@ -21,7 +21,7 @@ import { LibraryManager } from "./libraries/";
 
 import { generateInitResults, onInitialized } from "./init";
 
-import { compilersToLibs, parseDocument } from "./parseDocument";
+import { compilersToLibs, parseDocument, uriToLibs } from "./parseDocument";
 
 import {
   addAutoCompletion,
@@ -32,6 +32,7 @@ import {
   addDefinition,
   addHover,
 } from "./capabilities";
+import { EVENT_TYPE, eventBus } from "./events";
 VARS.env = "NODE";
 
 // Create a connection for the server, using Node's IPC as a transport.
@@ -44,6 +45,7 @@ const documents = new TextDocuments<TextDocument>(TextDocument);
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
+const uriToTextDocuments = new Map<string, TextDocument>();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -88,6 +90,8 @@ const addWorkspaceRootToWatch = async (
 };
 
 const parseAllRootFolders = (): void => {
+  let noLoaded = 0;
+
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach((folderPath) => {
@@ -105,12 +109,19 @@ const parseAllRootFolders = (): void => {
                 content.toString()
               );
 
+              uriToTextDocuments.set(file, textDocument);
+
               void parseDocument(
                 textDocument,
                 connection,
                 libManager,
                 docsToCompilerResults
               );
+
+              noLoaded++;
+              if (noLoaded >= rootFolders.filter(Boolean).length) {
+                eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+              }
             });
           });
       });
@@ -145,6 +156,8 @@ connection.onDidChangeConfiguration((change) => {
 documents.onDidChangeContent((change) => {
   parseAllRootFolders();
 
+  uriToTextDocuments.set(change.document.uri, change.document);
+
   void parseDocument(
     change.document,
     connection,
@@ -160,19 +173,13 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-addHover(
-  connection,
-  docsToCompilerResults,
-  documents,
-  compilersToLibs,
-  libManager
-);
+addHover(connection, docsToCompilerResults, documents, uriToLibs, libManager);
 
 addDefinition(
   connection,
   docsToCompilerResults,
   documents,
-  compilersToLibs,
+  uriToLibs,
   libManager
 );
 
@@ -182,7 +189,12 @@ addSymbols(connection, docsToCompilerResults);
 
 addFormatting(connection, documents, docsToCompilerResults);
 
-addRenameSymbol(connection, docsToCompilerResults, documents, compilersToLibs);
+addRenameSymbol(
+  connection,
+  docsToCompilerResults,
+  uriToTextDocuments,
+  compilersToLibs
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

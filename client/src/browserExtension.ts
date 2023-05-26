@@ -38,7 +38,7 @@ export function activate(context: ExtensionContext): void {
 
   workspace.registerTextDocumentContentProvider("xeto", new XetoProvider());
   const legend = (function () {
-    const tokenTypesLegend = ["label"];
+    const tokenTypesLegend = ["label", "namespace"];
 
     const tokenModifiersLegend = ["defaultLibrary"];
 

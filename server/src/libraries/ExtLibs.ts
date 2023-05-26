@@ -144,7 +144,7 @@ export const loadExtLibs = (
     }
   });
 
-  eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+  eventBus.fire(EVENT_TYPE.EXTERNAL_LIBS_LOADED);
 };
 
 export interface ExtLibDef {

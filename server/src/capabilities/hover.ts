@@ -13,7 +13,7 @@ export const addHover = (
   connection: Connection,
   compiledDocs: Record<string, ProtoCompiler>,
   documents: TextDocuments<TextDocument>,
-  compilersToLibs: Map<ProtoCompiler, XetoLib>,
+  uriToLibs: Map<string, XetoLib>,
   libManager: LibraryManager
 ): void => {
   function handleHover(params: HoverParams): Hover | null {
@@ -22,7 +22,7 @@ export const addHover = (
       pos: params.position,
       compiledDocs,
       documents,
-      compilersToLibs,
+      uriToLibs,
       libManager,
     });
 

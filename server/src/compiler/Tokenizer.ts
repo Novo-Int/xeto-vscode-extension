@@ -284,6 +284,10 @@ export class Tokenizer {
       case ",":
         return Token.COMMA;
       case ":":
+        if (this.cur === ":") {
+          this.consume();
+          return Token.DOUBLE_COLON;
+        }
         return Token.COLON;
       case "[":
         return Token.LBRACKET;

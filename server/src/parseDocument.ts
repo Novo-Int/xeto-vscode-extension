@@ -14,6 +14,8 @@ import {
 import { type FileLoc } from "./compiler/FileLoc";
 import { type Proto } from "./compiler/Proto";
 
+export const uriToLibs = new Map<string, XetoLib>();
+
 let ARE_LIBS_LOADED = false;
 let noLoaded = 0;
 
@@ -28,6 +30,9 @@ const libsLoadedCallback = (): void => {
 eventBus.addListener(EVENT_TYPE.EXTERNAL_LIBS_LOADED, libsLoadedCallback);
 eventBus.addListener(EVENT_TYPE.SYS_LIBS_LOADED, libsLoadedCallback);
 eventBus.addListener(EVENT_TYPE.WORKSPACE_SCANNED, libsLoadedCallback);
+eventBus.addListener(EVENT_TYPE.URI_PARSED, (type, args) => {
+  uriToLibs.set(args.uri, args.lib);
+});
 
 function fileLocToDiagPosition(loc: FileLoc): Position {
   return {
@@ -96,6 +101,7 @@ export const populateLibraryManager = async (
   }
 
   compilersToLibs.set(compiler, xetoLib);
+  uriToLibs.set(compiler.sourceUri, xetoLib);
 
   if (libVersion) {
     xetoLib.addMeta(libVersion, libDoc, deps);
@@ -160,17 +166,29 @@ export const parseDocument = async (
       diagnostics.push(diagnostic);
     }
   } finally {
+    // time to add it to the library manager
+    void populateLibraryManager(compiler, connection, libManager);
+
     if (ARE_LIBS_LOADED) {
       // resolve refs
       const missingRefs: Proto[] = [];
-      compiler.root?.resolveRefTypes(compiler.root, libManager, missingRefs);
+      const lib = uriToLibs.get(textDocument.uri);
+      compiler.root?.resolveRefTypes(
+        compiler.root,
+        libManager,
+        lib,
+        missingRefs
+      );
 
       const missingRefsDiagnostics = missingRefs.map((proto) => ({
         severity: DiagnosticSeverity.Error,
         range: {
-          start: textDocument.positionAt(proto.qnameLoc || proto.loc.charIndex),
+          start: textDocument.positionAt(
+            proto.qnameLoc?.charIndex ?? proto.loc.charIndex
+          ),
           end: textDocument.positionAt(
-            (proto.qnameLoc || proto.loc.charIndex) + proto.type.length
+            (proto.qnameLoc?.charIndex ?? proto.loc.charIndex) +
+              proto.type.length
           ),
         },
         message: "No available definition for this proto",
@@ -180,8 +198,6 @@ export const parseDocument = async (
     }
 
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-    // time to add it to the library manager
-    void populateLibraryManager(compiler, connection, libManager);
   }
 };
 

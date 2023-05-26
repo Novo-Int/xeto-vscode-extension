@@ -20,7 +20,7 @@ import { LibraryManager } from "./libraries/";
 
 import { generateInitResults, onInitialized } from "./init";
 
-import { compilersToLibs, parseDocument } from "./parseDocument";
+import { uriToLibs, compilersToLibs, parseDocument } from "./parseDocument";
 
 import {
   addAutoCompletion,
@@ -47,6 +47,7 @@ const documents = new TextDocuments<TextDocument>(TextDocument);
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
+const uriToTextDocuments = new Map<string, TextDocument>();
 
 const libManager: LibraryManager = new LibraryManager();
 
@@ -110,6 +111,8 @@ const parseAllRootFolders = (): void => {
                 await connection.sendRequest("xfs/readFile", { path: file })
               );
 
+              uriToTextDocuments.set(file, textDocument);
+
               void parseDocument(
                 textDocument,
                 connection,
@@ -132,13 +135,13 @@ connection.onInitialize((params: InitializeParams) => {
     str.replace(/\/$/, "")
   );
 
-  parseAllRootFolders();
-
   return generateInitResults(params);
 });
 
 connection.onInitialized((): InitializeResult => {
   void onInitialized(connection, libManager, docsToCompilerResults);
+
+  parseAllRootFolders();
 
   return {
     capabilities: {},
@@ -155,7 +158,7 @@ connection.onDidChangeConfiguration((change) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-  parseAllRootFolders();
+  uriToTextDocuments.set(change.document.uri, change.document);
 
   void parseDocument(
     change.document,
@@ -172,19 +175,13 @@ connection.onDidChangeWatchedFiles((_change) => {
 
 addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
 
-addHover(
-  connection,
-  docsToCompilerResults,
-  documents,
-  compilersToLibs,
-  libManager
-);
+addHover(connection, docsToCompilerResults, documents, uriToLibs, libManager);
 
 addDefinition(
   connection,
   docsToCompilerResults,
   documents,
-  compilersToLibs,
+  uriToLibs,
   libManager
 );
 
@@ -194,7 +191,12 @@ addSymbols(connection, docsToCompilerResults);
 
 addFormatting(connection, documents, docsToCompilerResults);
 
-addRenameSymbol(connection, docsToCompilerResults, documents, compilersToLibs);
+addRenameSymbol(
+  connection,
+  docsToCompilerResults,
+  uriToTextDocuments,
+  compilersToLibs
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events

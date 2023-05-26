@@ -142,18 +142,6 @@ export class Parser {
       proto.name = this.consumeName();
       this.consume(Token.COLON);
       this.parseBody(proto);
-    } else if (this.cur === Token.ID && this.peek === Token.LBRACE) {
-      const length: number = this.curVal.toString().length || 0;
-
-      this.err(
-        `Expecting : between proto name and body`,
-        new FileLoc(
-          this.fileLoc.file,
-          this.curLine,
-          this.curCol + length,
-          this.curCharIndex + length
-        )
-      );
     } else if (
       this.cur === Token.ID &&
       isLower(this.curVal.toString()) &&
@@ -234,7 +222,13 @@ export class Parser {
 
     if (this.cur !== Token.ID) return false;
 
-    const qnameLoc = this.curCharIndex - 1;
+    // const qnameLoc = this.curCharIndex - 1;
+    const qnameLoc = new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol - 1,
+      this.curCharIndex - 1
+    );
     const qname = this.consumeQName();
 
     if (this.cur === Token.AMP) return this.parseIsAnd(p, qname);
@@ -542,6 +536,11 @@ export class Parser {
     while (this.cur === Token.DOT) {
       this.consume();
       qname += "." + this.consumeName();
+    }
+
+    if (this.cur === Token.DOUBLE_COLON) {
+      this.consume();
+      qname += "::" + this.consumeName();
     }
 
     return qname;

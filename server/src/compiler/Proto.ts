@@ -1,4 +1,5 @@
 import { findProtoByQname } from "../FindProto";
+import { type XetoLib } from "../libraries";
 import { type LibraryManager } from "../libraries/LibManager";
 import { type FileLoc } from "./FileLoc";
 
@@ -25,7 +26,7 @@ export class Proto {
   public readonly name: string;
   public readonly type: string;
   public readonly loc: FileLoc;
-  public qnameLoc = 0;
+  public qnameLoc: FileLoc | null = null;
   public initialType = "";
 
   //	alias link to another Proto
@@ -54,14 +55,20 @@ export class Proto {
   public resolveRefTypes(
     root: Proto,
     libManager: LibraryManager,
+    ownLib: XetoLib | undefined,
     missingRefs: Proto[]
   ): void {
     if (this.hasRefType) {
       let currentAlias = findProtoByQname(this.type, root);
 
+      //  maybe is from this library
+      if (ownLib) {
+        currentAlias = findProtoByQname(this.type, ownLib.rootProto);
+      }
+
       //	maybe it's from a lib
       if (currentAlias === null) {
-        currentAlias = libManager.findProtoByQName(this.type);
+        currentAlias = libManager.findProtoByQName(this.type, ownLib?.deps);
       }
 
       this._refType = currentAlias ?? undefined;
@@ -73,7 +80,7 @@ export class Proto {
 
     // go deep
     Object.values(this.children).forEach((proto) => {
-      proto.resolveRefTypes(root, libManager, missingRefs);
+      proto.resolveRefTypes(root, libManager, ownLib, missingRefs);
     });
   }
 

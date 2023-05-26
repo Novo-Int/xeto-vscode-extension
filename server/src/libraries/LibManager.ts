@@ -1,4 +1,5 @@
 import { type Proto } from "../compiler/Proto";
+import { Token } from "../compiler/Token";
 import { findProtoByQname } from "../FindProto";
 import { type XetoLib } from "./XetoLib";
 
@@ -59,39 +60,31 @@ export class LibraryManager {
       }
     }
 
-    const split = qname.split(".");
-    let currentSize = 1;
+    //  no explicit lib
+    if (!qname.includes(Token.DOUBLE_COLON.toString())) {
+      const lib = this.getLib(qname);
 
-    //	libs can contain dot(.)
-    do {
-      const libName = split.slice(0, currentSize).join(".");
+      if (!lib) {
+        //  let search in sys lib
+        const sysLib = this.getLib("sys");
 
-      const lib = this.getLib(libName);
+        if (!sysLib) {
+          return null;
+        }
 
-      if (lib == null) {
-        currentSize++;
-        continue;
+        return findProtoByQname(qname, sysLib.rootProto);
       }
 
-      const proto = findProtoByQname(
-        split.slice(currentSize).join("."),
-        lib.rootProto
-      );
+      return findProtoByQname("", lib.rootProto);
+    }
 
-      if (proto != null) {
-        return proto;
-      }
+    const split = qname.split(Token.DOUBLE_COLON.toString());
+    const lib = this.getLib(split[0]);
 
-      currentSize++;
-    } while (currentSize <= split.length);
-
-    //	mayber this is a sys proto
-    const sysLib = this.getLib("sys");
-
-    if (sysLib == null) {
+    if (!lib) {
       return null;
     }
 
-    return findProtoByQname(qname, sysLib.rootProto);
+    return findProtoByQname(split[1], lib.rootProto);
   }
 }

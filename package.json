@@ -63,7 +63,12 @@
           "label": {
             "foreground": "#0cd319",
             "bold": true,
-            "underline": true
+            "underline": false,
+            "italic": true
+          },
+          "namespace": {
+            "foreground": "#002fff",
+            "bold": true
           }
         }
       }
