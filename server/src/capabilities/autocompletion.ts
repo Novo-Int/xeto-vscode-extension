@@ -52,7 +52,10 @@ export const addAutoCompletion = (
       if (lib) {
         const identifierWithoutLib = parts[1];
 
-        options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+        //  we don't allow drill down after the lib type
+        if (identifierWithoutLib === "") {
+          options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+        }
       }
     }
 
