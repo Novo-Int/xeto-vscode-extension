@@ -168,9 +168,12 @@ export const parseDocument = async (
       const missingRefsDiagnostics = missingRefs.map((proto) => ({
         severity: DiagnosticSeverity.Error,
         range: {
-          start: textDocument.positionAt(proto.qnameLoc || proto.loc.charIndex),
+          start: textDocument.positionAt(
+            proto.qnameLoc?.charIndex ?? proto.loc.charIndex
+          ),
           end: textDocument.positionAt(
-            (proto.qnameLoc || proto.loc.charIndex) + proto.type.length
+            (proto.qnameLoc?.charIndex ?? proto.loc.charIndex) +
+              proto.type.length
           ),
         },
         message: "No available definition for this proto",

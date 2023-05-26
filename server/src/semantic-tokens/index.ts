@@ -1,4 +1,5 @@
 import { type Proto } from "../compiler/Proto";
+import { Token } from "../compiler/Token";
 import { findProtoByQname } from "../FindProto";
 import { type LibraryManager } from "../libraries";
 
@@ -8,15 +9,33 @@ interface Pos {
   length: number;
 }
 
+enum SemanticType {
+  MARKER,
+  REFERENCE,
+}
+
+interface SemanticToken {
+  proto: Proto;
+  type: SemanticType;
+}
+
 const extractSemanticProtos = (
   root: Proto,
   libManager?: LibraryManager
-): Proto[] => {
-  const bag: Proto[] = [];
+): SemanticToken[] => {
+  const bag: SemanticToken[] = [];
 
   extractSemanticProtosRecursive(root, root, bag, libManager);
 
   return bag;
+};
+
+const isLibRef = (proto: Proto): boolean => {
+  if (proto.initialType !== "sys.Ref") {
+    return false;
+  }
+
+  return proto.type.includes(Token.DOUBLE_COLON.toString());
 };
 
 const isMarker = (
@@ -76,11 +95,22 @@ const isMarker = (
 const extractSemanticProtosRecursive = (
   root: Proto,
   proto: Proto,
-  bag: Proto[],
+  bag: SemanticToken[],
   libManager?: LibraryManager
 ): void => {
   if (isMarker(root, proto, libManager)) {
-    bag.push(proto);
+    bag.push({
+      proto,
+      type: SemanticType.MARKER,
+    });
+    return;
+  }
+
+  if (isLibRef(proto)) {
+    bag.push({
+      proto,
+      type: SemanticType.REFERENCE,
+    });
     return;
   }
 
@@ -97,24 +127,50 @@ const extractPosFromProto = (proto: Proto): Pos => {
   };
 };
 
-const convertProtosToSemanticTokens = (protos: Proto[]): number[] => {
+const extractPosFromToken = (token: SemanticToken): Pos => {
+  switch (token.type) {
+    case SemanticType.MARKER:
+      return extractPosFromProto(token.proto);
+    case SemanticType.REFERENCE: {
+      const parts = token.proto.type.split(Token.DOUBLE_COLON.toString());
+
+      return {
+        line: token.proto.qnameLoc?.line ?? token.proto.loc.line,
+        col: token.proto.qnameLoc?.col ?? token.proto.loc.col,
+        length: parts[0].length,
+      };
+    }
+  }
+};
+
+const semanticTokenToLegendIndex = (type: SemanticType): number => {
+  return type === SemanticType.MARKER ? 0 : 1;
+};
+
+const convertProtosToSemanticTokens = (protos: SemanticToken[]): number[] => {
   //	sort them based on the position on the doc
   const sortedProtos = protos
-    .filter((p) => p.loc)
-    .sort((a, b) => a.loc.charIndex - b.loc.charIndex);
+    .filter((p) => p.proto.loc)
+    .sort((a, b) => a.proto.loc.charIndex - b.proto.loc.charIndex);
 
   if (sortedProtos.length === 0) {
     return [];
   }
 
   //	created the return array based
-  let prevPos = extractPosFromProto(sortedProtos[0]);
+  let prevPos = extractPosFromToken(sortedProtos[0]);
 
-  const ret: number[] = [prevPos.line, prevPos.col, prevPos.length, 0, 0];
+  const ret: number[] = [
+    prevPos.line,
+    prevPos.col,
+    prevPos.length,
+    semanticTokenToLegendIndex(sortedProtos[0].type),
+    0,
+  ];
 
   for (let i = 1; i < sortedProtos.length; i++) {
     //	compute the difference
-    const currentPos = extractPosFromProto(sortedProtos[i]);
+    const currentPos = extractPosFromToken(sortedProtos[i]);
 
     if (currentPos.line === prevPos.line) {
       ret.push(0, currentPos.col - prevPos.col, currentPos.length, 0, 0);
@@ -123,7 +179,7 @@ const convertProtosToSemanticTokens = (protos: Proto[]): number[] => {
         currentPos.line - prevPos.line,
         currentPos.col,
         currentPos.length,
-        0,
+        semanticTokenToLegendIndex(sortedProtos[i].type),
         0
       );
     }
