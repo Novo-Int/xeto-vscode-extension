@@ -101,6 +101,7 @@ export const populateLibraryManager = async (
   }
 
   compilersToLibs.set(compiler, xetoLib);
+  uriToLibs.set(compiler.sourceUri, xetoLib);
 
   if (libVersion) {
     xetoLib.addMeta(libVersion, libDoc, deps);
@@ -165,6 +166,9 @@ export const parseDocument = async (
       diagnostics.push(diagnostic);
     }
   } finally {
+    // time to add it to the library manager
+    void populateLibraryManager(compiler, connection, libManager);
+
     if (ARE_LIBS_LOADED) {
       // resolve refs
       const missingRefs: Proto[] = [];
@@ -194,8 +198,6 @@ export const parseDocument = async (
     }
 
     connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-    // time to add it to the library manager
-    void populateLibraryManager(compiler, connection, libManager);
   }
 };
 
