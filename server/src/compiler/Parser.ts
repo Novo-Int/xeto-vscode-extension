@@ -142,18 +142,6 @@ export class Parser {
       proto.name = this.consumeName();
       this.consume(Token.COLON);
       this.parseBody(proto);
-    } else if (this.cur === Token.ID && this.peek === Token.LBRACE) {
-      const length: number = this.curVal.toString().length || 0;
-
-      this.err(
-        `Expecting : between proto name and body`,
-        new FileLoc(
-          this.fileLoc.file,
-          this.curLine,
-          this.curCol + length,
-          this.curCharIndex + length
-        )
-      );
     } else if (
       this.cur === Token.ID &&
       isLower(this.curVal.toString()) &&
