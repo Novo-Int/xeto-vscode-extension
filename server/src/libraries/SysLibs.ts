@@ -70,6 +70,20 @@ const processSysLibNo = async (
     libInfoCompiler.root?.children.pragma?.children._version.type ?? "unknown";
   const libDoc = libInfoCompiler.root?.children.pragma?.doc ?? "";
 
+  const protoDeps =
+    libInfoCompiler.root?.children.pragma?.children._depends?.children;
+
+  const deps: string[] = [];
+
+  protoDeps &&
+    Object.keys(protoDeps).forEach((key) => {
+      if (key.startsWith("#")) {
+        return;
+      }
+
+      deps.push(protoDeps[key].children.lib.type);
+    });
+
   const lib = new XetoLib(
     libInfo.name,
     libVersion,
@@ -77,6 +91,7 @@ const processSysLibNo = async (
     libDoc
   );
   lib.includePriority = -1;
+  lib.addMeta(libVersion, libDoc, deps);
 
   // now that we have the lib read all the files
   const filesPr = libInfo.files.map(async (fileName) => {
