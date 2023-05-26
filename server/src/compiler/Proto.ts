@@ -68,7 +68,7 @@ export class Proto {
 
       //	maybe it's from a lib
       if (currentAlias === null) {
-        currentAlias = libManager.findProtoByQName(this.type);
+        currentAlias = libManager.findProtoByQName(this.type, ownLib?.deps);
       }
 
       this._refType = currentAlias ?? undefined;
