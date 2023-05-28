@@ -12,20 +12,23 @@ interface Pos {
 enum SemanticType {
   MARKER,
   REFERENCE,
+  DOC_REFERENCE,
 }
 
 interface SemanticToken {
   proto: Proto;
   type: SemanticType;
+  extraInfo?: Record<string, unknown>;
 }
 
 const extractSemanticProtos = (
   root: Proto,
+  source: string,
   libManager?: LibraryManager
 ): SemanticToken[] => {
   const bag: SemanticToken[] = [];
 
-  extractSemanticProtosRecursive(root, root, bag, libManager);
+  extractSemanticProtosRecursive(root, root, bag, source, libManager);
 
   return bag;
 };
@@ -92,12 +95,58 @@ const isMarker = (
   return false;
 };
 
+const hasDocRefs = (proto: Proto): boolean => {
+  return proto.doc?.match(/\[([^\]]*)\]/)?.length !== undefined ?? false;
+};
+
+const getDocRefs = (proto: Proto, source: string): SemanticToken[] => {
+  if (!proto.doc || !proto.docLoc) {
+    return [];
+  }
+  const originalSource = source.substring(
+    proto.docLoc.charIndex,
+    proto.loc.charIndex
+  );
+
+  const ret: SemanticToken[] = [];
+
+  const matches = originalSource.matchAll(/\[([^\]]*)\]/g);
+
+  for (const match of matches) {
+    const lines = originalSource
+      .substring(0, (match.index ?? 0) + match[0].length)
+      .split("\n");
+
+    ret.push({
+      proto,
+      type: SemanticType.DOC_REFERENCE,
+      extraInfo: {
+        line: proto.docLoc.line + lines.length,
+        col: lines[lines.length - 1].indexOf(match[1]),
+        length: match[1].length,
+      },
+    });
+  }
+
+  if (!matches) {
+    return [];
+  }
+
+  return ret;
+};
+
 const extractSemanticProtosRecursive = (
   root: Proto,
   proto: Proto,
   bag: SemanticToken[],
+  source: string,
   libManager?: LibraryManager
 ): void => {
+  //  maybe we have some links in the comments
+  if (hasDocRefs(proto)) {
+    bag.push(...getDocRefs(proto, source));
+  }
+
   if (isMarker(root, proto, libManager)) {
     bag.push({
       proto,
@@ -115,7 +164,7 @@ const extractSemanticProtosRecursive = (
   }
 
   Object.values(proto.children).forEach((proto) => {
-    extractSemanticProtosRecursive(root, proto, bag, libManager);
+    extractSemanticProtosRecursive(root, proto, bag, source, libManager);
   });
 };
 
@@ -140,11 +189,20 @@ const extractPosFromToken = (token: SemanticToken): Pos => {
         length: parts[0].length,
       };
     }
+    case SemanticType.DOC_REFERENCE:
+      return token.extraInfo as unknown as Pos;
   }
 };
 
 const semanticTokenToLegendIndex = (type: SemanticType): number => {
-  return type === SemanticType.MARKER ? 0 : 1;
+  switch (type) {
+    case SemanticType.MARKER:
+      return 0;
+    case SemanticType.REFERENCE:
+      return 1;
+    case SemanticType.DOC_REFERENCE:
+      return 2;
+  }
 };
 
 const convertProtosToSemanticTokens = (protos: SemanticToken[]): number[] => {

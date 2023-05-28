@@ -27,6 +27,7 @@ export class Proto {
   public readonly type: string;
   public readonly loc: FileLoc;
   public qnameLoc: FileLoc | null = null;
+  public docLoc: FileLoc | null = null;
   public initialType = "";
 
   //	alias link to another Proto
@@ -99,6 +100,11 @@ export class Proto {
     //	it we have the start of the qname
     if (ast._qnameLoc) {
       proto.qnameLoc = ast._qnameLoc;
+    }
+
+    //  if we have docs, save the location
+    if (ast._doc?._loc) {
+      proto.docLoc = ast._doc._loc;
     }
 
     Object.keys(ast)

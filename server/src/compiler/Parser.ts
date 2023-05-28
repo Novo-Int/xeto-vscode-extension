@@ -9,12 +9,14 @@ import { type CompilerLogFunction } from "./CompilerErrorType";
 class ParsedProto {
   readonly loc: FileLoc;
   public doc: string | null;
+  public docLoc: FileLoc | null;
   public name: string | null;
   public traits: Record<string, unknown> = {};
 
   constructor(loc: FileLoc) {
     this.loc = loc;
     this.doc = null;
+    this.docLoc = null;
     this.name = null;
   }
 }
@@ -126,7 +128,7 @@ export class Parser {
 
   private parseProto(): ParsedProto | null {
     // leading comment
-    const doc = this.parseLeadingDoc();
+    const docInfo = this.parseLeadingDoc();
 
     // end of file or closing symbols
     if (this.cur === Token.EOF) return null;
@@ -135,7 +137,10 @@ export class Parser {
 
     // this token is start of our proto production
     const proto = new ParsedProto(this.curToLoc());
-    proto.doc = doc;
+    if (docInfo) {
+      proto.doc = docInfo.doc;
+      proto.docLoc = docInfo.loc;
+    }
 
     // <markerOnly> | <named> | <unnamed>
     if (this.cur === Token.ID && this.peek === Token.COLON) {
@@ -438,6 +443,7 @@ export class Parser {
     p.traits._doc = {
       _is: "sys.Str",
       _val: p.doc,
+      _loc: p.docLoc,
     };
   }
 
@@ -466,8 +472,9 @@ export class Parser {
   // Doc
   /// ///////////////////////////////////////////////////////////////////////
 
-  private parseLeadingDoc(): string | null {
+  private parseLeadingDoc(): { doc: string; loc: FileLoc } | null {
     let doc: string | null = null;
+    let loc: FileLoc | null = null;
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -479,6 +486,7 @@ export class Parser {
 
       // parse one or more lines of comments
       doc = "";
+      loc = this.curToLoc();
       while (this.cur === Token.COMMENT) {
         doc += `${this.curVal.toString() as string}\n`;
         this.consume();
@@ -493,7 +501,14 @@ export class Parser {
       doc = trimToNull(doc);
       break;
     }
-    return doc;
+    if (!doc || !loc) {
+      return null;
+    }
+
+    return {
+      doc,
+      loc,
+    };
   }
 
   private parseTrailingDoc(proto: ParsedProto): void {
