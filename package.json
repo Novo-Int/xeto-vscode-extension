@@ -53,6 +53,13 @@
         }
       }
     },
+    "semanticTokenTypes": [
+      {
+        "id": "docLink",
+        "superType": "type",
+        "description": "Token type for links in docs"
+      }
+    ],
     "configurationDefaults": {
       "[xeto]": {
         "editor.semanticHighlighting.enabled": true
@@ -68,6 +75,10 @@
           },
           "namespace": {
             "foreground": "#002fff",
+            "bold": true
+          },
+          "docLink": {
+            "foreground": "#12a4d1",
             "bold": true
           }
         }
