@@ -26,7 +26,11 @@ export const addSemanticTokens = (
       };
     }
 
-    const semanticProtos = extractSemanticProtos(compiler.root, libManager);
+    const semanticProtos = extractSemanticProtos(
+      compiler.root,
+      compiler.input,
+      libManager
+    );
     const semanticTokens = convertProtosToSemanticTokens(semanticProtos);
 
     return {
