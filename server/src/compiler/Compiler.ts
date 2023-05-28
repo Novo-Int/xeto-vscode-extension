@@ -9,6 +9,12 @@ export class ProtoCompiler {
   public root?: Proto;
   public readonly sourceUri: string;
 
+  private _input = "";
+
+  public get input(): string {
+    return this._input;
+  }
+
   public tokenBag: TokenWithPosition[] = [];
 
   private readonly ast: Record<string, unknown> = {};
@@ -39,6 +45,8 @@ export class ProtoCompiler {
     if (!input.endsWith("\0")) {
       input += "\0";
     }
+
+    this._input = input;
 
     const parseStep = new Parser(input, this.logErr.bind(this), this.sourceUri);
     parseStep.parse(this.ast);
