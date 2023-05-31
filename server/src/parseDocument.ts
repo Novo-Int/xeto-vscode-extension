@@ -80,7 +80,12 @@ export const populateLibraryManager = async (
           return;
         }
 
-        deps.push(protoDeps[key].children.lib.type);
+        const dep = protoDeps[key].children?.lib?.type;
+        if (!dep) {
+          return;
+        }
+
+        deps.push(dep);
       });
   }
 

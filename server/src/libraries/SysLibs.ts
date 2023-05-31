@@ -80,8 +80,12 @@ const processSysLibNo = async (
       if (key.startsWith("#")) {
         return;
       }
+      const dep = protoDeps[key].children?.lib?.type;
+      if (!dep) {
+        return;
+      }
 
-      deps.push(protoDeps[key].children.lib.type);
+      deps.push(dep);
     });
 
   const lib = new XetoLib(
