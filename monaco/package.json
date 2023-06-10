@@ -1,0 +1,21 @@
+{
+  "name": "monaco",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node ./build.js",
+    "start": "yes | npx http-server ./dist -c-1",
+    "all": "npm run build && npm run start"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "monaco-editor": "^0.39.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.18.0",
+    "typescript": "^5.1.3"
+  }
+}
