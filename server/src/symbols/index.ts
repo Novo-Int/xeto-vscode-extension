@@ -88,8 +88,15 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
       return;
     }
 
+    let name = symbolName.replace(/_(.*)/, "$1");
+
+    //  all numbers
+    if (name.match(/^[0-9]+$/)) {
+      name = symbols[symbolName].refType?.name ?? " ";
+    }
+
     const docSymbol: DocumentSymbol = {
-      name: symbolName.replace(/_(.*)/, "$1"),
+      name,
       kind: getSymbolType(symbols[symbolName]),
       range: {
         start: {
