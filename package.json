@@ -3,7 +3,7 @@
   "description": "A xeto extension",
   "displayName": "Xeto",
   "license": "BSD-3",
-  "version": "0.1.27",
+  "version": "0.1.28",
   "categories": [],
   "keywords": [
     "multi-root ready"
