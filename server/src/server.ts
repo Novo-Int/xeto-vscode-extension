@@ -91,12 +91,14 @@ const addWorkspaceRootToWatch = async (
 
 const parseAllRootFolders = (): void => {
   let noLoaded = 0;
+  let totalToLoad = 0;
 
   rootFolders
     .filter((folder) => Boolean(folder))
     .forEach((folderPath) => {
       void addWorkspaceRootToWatch(folderPath).then((files) => {
         const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
+        totalToLoad += xetoFiles.length;
 
         xetoFiles
           .filter((file) => !docsToCompilerResults[`file://${file}`])
@@ -116,12 +118,12 @@ const parseAllRootFolders = (): void => {
                 connection,
                 libManager,
                 docsToCompilerResults
-              );
-
-              noLoaded++;
-              if (noLoaded >= rootFolders.filter(Boolean).length) {
-                eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
-              }
+              ).then(() => {
+                noLoaded++;
+                if (noLoaded >= totalToLoad) {
+                  eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+                }
+              });
             });
           });
       });
@@ -154,7 +156,7 @@ connection.onDidChangeConfiguration((change) => {
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
-  parseAllRootFolders();
+  //  parseAllRootFolders();
 
   uriToTextDocuments.set(change.document.uri, change.document);
 

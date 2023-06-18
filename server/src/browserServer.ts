@@ -91,43 +91,41 @@ const addWorkspaceRootToWatch = async (
 
 const parseAllRootFolders = (): void => {
   let noLoaded = 0;
+  let totalToLoad = 0;
 
-  rootFolders
-    .filter((folder) => Boolean(folder))
-    .forEach((folderPath) => {
+  const filesToParsePr = rootFolders
+    .filter(Boolean)
+    .map(async (fp) => await addWorkspaceRootToWatch(fp));
+
+  void Promise.all(filesToParsePr).then((files) => {
+    const xetoFiles = files.flat().filter((path) => path.endsWith(".xeto"));
+    totalToLoad = xetoFiles.length;
+
+    xetoFiles.forEach((file) => {
       void (async function (): Promise<void> {
-        const files = await addWorkspaceRootToWatch(folderPath);
+        const textDocument = TextDocument.create(
+          file,
+          "xeto",
+          1,
+          await connection.sendRequest("xfs/readFile", { path: file })
+        );
 
-        const xetoFiles = files.filter((path) => path.endsWith(".xeto"));
+        uriToTextDocuments.set(file, textDocument);
 
-        xetoFiles
-          .filter((file) => !docsToCompilerResults[file])
-          .forEach((file) => {
-            void (async function (): Promise<void> {
-              const textDocument = TextDocument.create(
-                file,
-                "xeto",
-                1,
-                await connection.sendRequest("xfs/readFile", { path: file })
-              );
-
-              uriToTextDocuments.set(file, textDocument);
-
-              void parseDocument(
-                textDocument,
-                connection,
-                libManager,
-                docsToCompilerResults
-              );
-
-              noLoaded++;
-              if (noLoaded >= rootFolders.filter(Boolean).length) {
-                eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
-              }
-            })();
-          });
+        void parseDocument(
+          textDocument,
+          connection,
+          libManager,
+          docsToCompilerResults
+        ).then(() => {
+          noLoaded++;
+          if (noLoaded >= totalToLoad) {
+            eventBus.fire(EVENT_TYPE.WORKSPACE_SCANNED);
+          }
+        });
       })();
     });
+  });
 };
 
 connection.onInitialize((params: InitializeParams) => {
