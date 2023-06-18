@@ -110,6 +110,11 @@
       "name": "xeto.proto.val",
       "patterns": [
         {
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "name": "string.quoted.triple"
+        },
+        {
           "match": "\"[^\"]*\"",
           "name": "string.quoted.double"
         },
