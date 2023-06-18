@@ -42,6 +42,11 @@ const connection = createConnection(ProposedFeatures.all);
 // Create a simple text document manager.
 const documents = new TextDocuments<TextDocument>(TextDocument);
 
+eventBus.addListener(EVENT_TYPE.WILL_RESOLVE_REFS, () => {
+  //  parse again so we resolve refs
+  parseAllRootFolders();
+});
+
 let rootFolders: string[] = [];
 
 const docsToCompilerResults: Record<string, ProtoCompiler> = {};
