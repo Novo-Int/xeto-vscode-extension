@@ -112,7 +112,12 @@
         {
           "begin": "\"\"\"",
           "end": "\"\"\"",
-          "name": "string.quoted.triple"
+          "name": "string.quoted.triple",
+          "patterns": [
+            { "include": "#embeddedSVG" },
+            { "include": "#embeddedHTML" },
+            { "include": "#embeddedXML" }
+          ]
         },
         {
           "match": "\"[^\"]*\"",
@@ -124,6 +129,21 @@
           "name": "string.quoted.double"
         }
       ]
+    },
+    "embeddedSVG": {
+      "name": "meta.embedded.block.svg",
+      "begin": "<svg",
+      "end": "</svg>"
+    },
+    "embeddedHTML": {
+      "name": "meta.embedded.block.html",
+      "begin": "<html",
+      "end": "</html\\s*>"
+    },
+    "embeddedXML": {
+      "name": "meta.embedded.block.xml",
+      "begin": "<(\\w*)\\s*>",
+      "end": "</$1\\s*>"
     },
     "protoType": {
       "name": "xeto.proto.type",
