@@ -24,6 +24,7 @@ const libsLoadedCallback = (): void => {
 
   if (noLoaded === 3) {
     ARE_LIBS_LOADED = true;
+    eventBus.fire(EVENT_TYPE.WILL_RESOLVE_REFS);
   }
 };
 

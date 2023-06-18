@@ -3,6 +3,7 @@ export const enum EVENT_TYPE {
   EXTERNAL_LIBS_LOADED,
   WORKSPACE_SCANNED,
   URI_PARSED,
+  WILL_RESOLVE_REFS,
 }
 
 type Callback = (type: EVENT_TYPE, args: any) => void;
@@ -13,6 +14,7 @@ class EventBus {
     [EVENT_TYPE.SYS_LIBS_LOADED]: new Set(),
     [EVENT_TYPE.WORKSPACE_SCANNED]: new Set(),
     [EVENT_TYPE.URI_PARSED]: new Set(),
+    [EVENT_TYPE.WILL_RESOLVE_REFS]: new Set(),
   };
 
   public addListener(type: EVENT_TYPE, callback: Callback): void {
