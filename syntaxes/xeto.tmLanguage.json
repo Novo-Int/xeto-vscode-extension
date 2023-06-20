@@ -133,17 +133,17 @@
     "embeddedSVG": {
       "name": "meta.embedded.block.svg",
       "begin": "<svg",
-      "end": "</svg>"
+      "end": "</svg>|.*(?=\"\"\")"
     },
     "embeddedHTML": {
       "name": "meta.embedded.block.html",
-      "begin": "<html",
-      "end": "</html\\s*>"
+      "begin": "<\\shtml\\s*>",
+      "end": "</html\\s*>|.*(?=\"\"\")"
     },
     "embeddedXML": {
       "name": "meta.embedded.block.xml",
       "begin": "<(\\w*)\\s*>",
-      "end": "</$1\\s*>"
+      "end": "</\\s*\\1\\s*>|.*(?=\"\"\")"
     },
     "protoType": {
       "name": "xeto.proto.type",
