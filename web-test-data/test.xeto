@@ -16,6 +16,14 @@ Icon: {
 
 }
 
+CircularDef: CircularDef {}
+
+MidCircular: CircularDef2Levels {
+	marker
+}
+
+CircularDef2Levels: MidCircular {}
+
 accessibility: Icon {
   svg:"""
       <svg
@@ -36,6 +44,9 @@ accessibility: Icon {
         <path d="M13.76 17.5a5 5 0 0 0-6.88-6" />
       </svg>
       """
+	notEndingString: """
+	 <p>something
+	"""
 	marker
 	{
 		string: "some string here"
