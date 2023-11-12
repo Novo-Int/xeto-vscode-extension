@@ -44,3 +44,24 @@ export function trimToNull(str: string): string | null {
 
   return ret === "" ? null : ret;
 }
+
+export function isIdChar(source: string): boolean {
+  const code = source.charCodeAt(0);
+
+  if (code < 127) {
+    if (
+      isAlphaNumeric(source) ||
+      code === "_".charCodeAt(0) ||
+      code === ":".charCodeAt(0) ||
+      code === "-".charCodeAt(0) ||
+      code === ".".charCodeAt(0) ||
+      code === "~".charCodeAt(0)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  return false;
+}
