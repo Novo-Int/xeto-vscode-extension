@@ -2,6 +2,7 @@ export class Token {
   static ID = new Token("identifier");
   static STR = new Token("Str", true);
   static VAL = new Token("value", true);
+  static REF = new Token("ref", true);
 
   // operators
   static DOT = new Token(".");
