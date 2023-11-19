@@ -16,6 +16,10 @@ const getSymbolType = (p: Proto): SymbolKind => {
     return SymbolKind.Operator;
   }
 
+  if (p.children["#isData"]) {
+    return SymbolKind.Key;
+  }
+
   if (
     p.type === "sys.Marker" ||
     p.type === "Marker" ||

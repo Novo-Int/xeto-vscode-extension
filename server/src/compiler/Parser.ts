@@ -492,6 +492,10 @@ export class Parser {
 
     let name = child.name;
 
+    if (child.isData) {
+      child.traits["#isData"] = true;
+    }
+
     if (name === null) {
       name = this.autoName(parent);
     } else {
