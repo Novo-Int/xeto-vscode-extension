@@ -8,13 +8,15 @@ import { type CompilerLogFunction } from "./CompilerErrorType";
 
 class ParsedProto {
   readonly loc: FileLoc;
+  readonly isData: boolean;
   public doc: string | null;
   public docLoc: FileLoc | null;
   public name: string | null;
   public traits: Record<string, unknown> = {};
 
-  constructor(loc: FileLoc) {
+  constructor(loc: FileLoc, isData = false) {
     this.loc = loc;
+    this.isData = isData;
     this.doc = null;
     this.docLoc = null;
     this.name = null;
@@ -137,14 +139,14 @@ export class Parser {
     if (this.cur === Token.GT) return null;
 
     // this token is start of our proto production
-    const proto = new ParsedProto(this.curToLoc());
+    const proto = new ParsedProto(this.curToLoc(), this.cur === Token.REF);
     if (docInfo) {
       proto.doc = docInfo.doc;
       proto.docLoc = docInfo.loc;
     }
 
     if (this.cur === Token.REF) {
-      proto.name = this.consumeDataName();
+      proto.name = "@" + this.consumeDataName();
       this.parseLibData(proto);
       return proto;
     }
@@ -462,8 +464,8 @@ export class Parser {
   }
 
   private parseDataRef(parent: ParsedProto): void {
-    const child: ParsedProto = new ParsedProto(this.curToLoc());
-    child.name = this.curVal;
+    const child: ParsedProto = new ParsedProto(this.curToLoc(), true);
+    child.name = "@" + (this.curVal as string);
 
     this.addToParent(parent, child, false);
     this.consume();
