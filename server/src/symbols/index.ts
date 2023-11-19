@@ -95,6 +95,12 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
       name = symbols[symbolName].refType?.name ?? " ";
     }
 
+    // we may have an empty name due to
+    // data instance dicts
+    if (name === "") {
+      return;
+    }
+
     const docSymbol: DocumentSymbol = {
       name,
       kind: getSymbolType(symbols[symbolName]),
