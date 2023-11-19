@@ -1,4 +1,5 @@
 # XETO Extension for VSCode
+
 [![GitHub CI](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml/badge.svg)](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml)
 [![License](https://img.shields.io/badge/license-bsd--3--clause-brightgreen)](https://opensource.org/license/bsd-3-clause/)
 
@@ -75,8 +76,11 @@ The extesion can be used both in:
   - Define folders or files that are external to the workspace and use the symbols define there
   - Hover, Show Definition and Go to Definition work with these
 - Support for `sys` libraries:
+
   - Load system libraries by specifiying a Git commit sha
   - this works similar to external libraries, but loading them via HTTP instead of local file system
+
+- Support for data instances
 
 ## Configuration
 
