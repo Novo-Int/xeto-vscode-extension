@@ -16,6 +16,10 @@ const getSymbolType = (p: Proto): SymbolKind => {
     return SymbolKind.Operator;
   }
 
+  if (p.children["#isData"]) {
+    return SymbolKind.Key;
+  }
+
   if (
     p.type === "sys.Marker" ||
     p.type === "Marker" ||
@@ -93,6 +97,12 @@ const generateSymbols = (root: Proto): DocumentSymbol[] => {
     //  all numbers
     if (name.match(/^[0-9]+$/)) {
       name = symbols[symbolName].refType?.name ?? " ";
+    }
+
+    // we may have an empty name due to
+    // data instance dicts
+    if (name === "") {
+      return;
     }
 
     const docSymbol: DocumentSymbol = {

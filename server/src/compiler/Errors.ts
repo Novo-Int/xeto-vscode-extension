@@ -6,6 +6,7 @@ export enum ErrorTypes {
   DUPLICATED_SYMBOL = "DUPLICATED_SYMBOL",
   UNKNOWN_SYMBOL = "UNKNOWN_SYMBOL",
   NOT_REPORTED = "NOT_REPORTED",
+  EMPTY_REF = "EMPTY_REF",
 }
 
 export class CompilerError extends Error {

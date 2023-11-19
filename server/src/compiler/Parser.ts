@@ -8,13 +8,15 @@ import { type CompilerLogFunction } from "./CompilerErrorType";
 
 class ParsedProto {
   readonly loc: FileLoc;
+  readonly isData: boolean;
   public doc: string | null;
   public docLoc: FileLoc | null;
   public name: string | null;
   public traits: Record<string, unknown> = {};
 
-  constructor(loc: FileLoc) {
+  constructor(loc: FileLoc, isData = false) {
     this.loc = loc;
+    this.isData = isData;
     this.doc = null;
     this.docLoc = null;
     this.name = null;
@@ -117,6 +119,7 @@ export class Parser {
     if (this.cur === Token.RBRACE) return;
     if (this.cur === Token.GT) return;
     if (this.cur === Token.EOF) return;
+    if (this.cur === Token.REF) return;
 
     this.err(
       `Expecting end of proto: comma or newline, not ${this.cur.toString()}`
@@ -136,10 +139,16 @@ export class Parser {
     if (this.cur === Token.GT) return null;
 
     // this token is start of our proto production
-    const proto = new ParsedProto(this.curToLoc());
+    const proto = new ParsedProto(this.curToLoc(), this.cur === Token.REF);
     if (docInfo) {
       proto.doc = docInfo.doc;
       proto.docLoc = docInfo.loc;
+    }
+
+    if (this.cur === Token.REF) {
+      proto.name = "@" + this.consumeDataName();
+      this.parseLibData(proto);
+      return proto;
     }
 
     // <markerOnly> | <named> | <unnamed>
@@ -364,6 +373,113 @@ export class Parser {
   }
 
   /// ///////////////////////////////////////////////////////////////////////
+  // Data
+  /// ///////////////////////////////////////////////////////////////////////
+
+  private parseLibData(proto: ParsedProto): void {
+    proto.traits._is = "sys.Data";
+
+    if (this.cur !== Token.COLON) {
+      throw new Error("Expecting colon after instance id");
+    }
+
+    this.consume();
+
+    const qnameLoc = new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol - 1,
+      this.curCharIndex - 1
+    );
+    const qname = this.consumeQName();
+
+    proto.traits._is = qname;
+    proto.traits._type = "sys.Ref";
+    proto.traits._qnameLoc = qnameLoc;
+
+    if (this.cur !== Token.LBRACE) {
+      this.err("Expecting '{' to start named instance dict", this.curToLoc());
+    }
+
+    this.parseDict(proto, Token.LBRACE, Token.RBRACE);
+  }
+
+  private parseDict(
+    parent: ParsedProto,
+    openToken: Token,
+    closeToken: Token
+  ): void {
+    this.consume(openToken);
+    this.skipNewlines();
+
+    while (this.cur !== closeToken) {
+      this.skipComments();
+
+      const child = new ParsedProto(this.curToLoc());
+
+      if (this.cur === Token.ID) {
+        child.name = this.consumeName();
+
+        if (this.cur !== Token.COLON) {
+          child.traits = {
+            _is: "sys.Marker",
+          };
+        } else {
+          this.consume();
+
+          this.parseData(child);
+        }
+      } else {
+        this.parseData(child);
+      }
+
+      this.addToParent(parent, child, false);
+
+      this.parseCommaOrNewline("Expecting end of dict tag", closeToken);
+    }
+
+    this.consume(closeToken);
+  }
+
+  private parseData(parent: ParsedProto): void {
+    if (this.cur === Token.REF) {
+      this.parseDataRef(parent);
+      return;
+    }
+
+    if (this.cur === Token.STR || this.cur === Token.VAL) {
+      this.parseScalar(parent);
+      return;
+    }
+
+    if (this.cur === Token.LBRACE) {
+      this.parseDict(parent, Token.LBRACE, Token.RBRACE);
+    }
+
+    /*
+    if (name !== null) {
+      this.parseDataSpec()
+    }
+    */
+  }
+
+  private parseDataRef(parent: ParsedProto): void {
+    const child: ParsedProto = new ParsedProto(this.curToLoc(), true);
+    child.name = "@" + (this.curVal as string);
+
+    this.addToParent(parent, child, false);
+    this.consume();
+  }
+
+  private parseScalar(parent: ParsedProto): void {
+    const child: ParsedProto = new ParsedProto(this.curToLoc());
+    child.name = this.curVal;
+
+    this.addToParent(parent, child, false);
+    this.consume();
+  }
+
+  /// ///////////////////////////////////////////////////////////////////////
   // AST Manipulation
   /// ///////////////////////////////////////////////////////////////////////
   private addToParent(
@@ -375,6 +491,10 @@ export class Parser {
     this.addLoc(child);
 
     let name = child.name;
+
+    if (child.isData) {
+      child.traits["#isData"] = true;
+    }
 
     if (name === null) {
       name = this.autoName(parent);
@@ -523,6 +643,34 @@ export class Parser {
   // Char Reads
   /// ///////////////////////////////////////////////////////////////////////
 
+  private parseCommaOrNewline(errMsg: string, close: Token): void {
+    if (this.cur === Token.COMMA) {
+      this.consume();
+      this.skipNewlines();
+      return;
+    }
+
+    if (this.cur === Token.NL) {
+      this.skipNewlines();
+      return;
+    }
+
+    if (this.cur === close) {
+      return;
+    }
+
+    this.err(
+      `${errMsg} comma or newline, no ${this.cur.toString()}`,
+      this.curToLoc()
+    );
+  }
+
+  private skipComments(): void {
+    while (this.cur === Token.COMMENT || this.cur === Token.NL) {
+      this.consume();
+    }
+  }
+
   private skipNewlines(): boolean {
     if (this.cur !== Token.NL) return false;
     while (this.cur === Token.NL) this.consume();
@@ -565,6 +713,14 @@ export class Parser {
     this.verify(Token.ID);
     const name = this.curVal.toString();
     this.consume();
+    return name;
+  }
+
+  private consumeDataName(): string {
+    this.verify(Token.REF);
+    const name = this.curVal.toString();
+    this.consume();
+
     return name;
   }
 

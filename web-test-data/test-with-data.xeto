@@ -24,6 +24,11 @@ MidCircular: CircularDef2Levels {
 
 CircularDef2Levels: MidCircular {}
 
+@move-down : Action {
+  icon: @arrow-down
+  hotkeys: {"Down"}
+}
+
 accessibility: Icon {
   svg:"""
       <svg

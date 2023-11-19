@@ -76,6 +76,13 @@
         "0": { "name": "entity.name.tag" }
       }
     },
+    "dataInstanceName": {
+      "match": "@([a-zA-Z0-9_~:-]*[a-zA-Z0-9_~])",
+      "name": "xeto.name.data",
+      "captures": {
+        "0": { "name": "storage.type.struct" }
+      }
+    },
     "name": {
       "match": "(([a-zA-Z][a-zA-Z0-9_]*)\\s*(:(?!:)))",
       "name": "xeto.name",
@@ -147,7 +154,7 @@
     },
     "protoType": {
       "name": "xeto.proto.type",
-      "patterns": [{ "include": "#qname" }]
+      "patterns": [{ "include": "#dataInstanceName" }, { "include": "#qname" }]
     },
     "lineComment": {
       "match": "\\s*//.*$",

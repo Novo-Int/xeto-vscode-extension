@@ -103,6 +103,11 @@ export class Tokenizer {
       return this.tok;
     }
 
+    if (this.cur === "@") {
+      this.tok = this.ref();
+      return this.tok;
+    }
+
     if (isNumeric(this.cur)) {
       this.tok = this.num();
       return this.tok;
@@ -190,6 +195,85 @@ export class Tokenizer {
 
     this.val = s;
     return Token.STR;
+  }
+
+  private ref(): Token {
+    this.consume(); // @
+
+    this.val = this.refName();
+
+    return Token.REF;
+  }
+
+  private refName(): string {
+    // handle simple name as common case
+    let name = this.refSection();
+    if (this.cur !== "." && !(this.cur === ":" && this.peek === ":")) {
+      return name;
+    }
+
+    // handle qualified and dotted names
+    let path: string[] = [];
+    path.push(name);
+    while (this.cur === ".") {
+      this.consume();
+      path.push(this.refSection());
+    }
+
+    // if no "::" then this is a unqualified dotted path
+    if (!(this.cur === ":" && this.peek === ":")) {
+      return path.join(".");
+    }
+
+    this.consume();
+    this.consume();
+
+    // qualified name
+    const lib = path.join(".");
+    name = this.refSection();
+
+    //  these casts are necessary because of this
+    //  https://github.com/Microsoft/TypeScript/issues/9998
+    if ((this.cur as any) !== ".") {
+      return lib + "::" + path.join(".");
+    }
+
+    // qualified dotted path
+    path = [];
+    path.push(name);
+    while ((this.cur as any) === ".") {
+      this.consume();
+      path.push(this.refSection());
+    }
+
+    return lib + "::" + path.join(".");
+  }
+
+  private refSection(): string {
+    let s: string = "";
+
+    while (this.isRefChar(this.cur, this.peek)) {
+      s += this.cur;
+      this.consume();
+    }
+
+    return s;
+  }
+
+  private isRefChar(cur: string, peek: string): boolean {
+    if (isAlphaNumeric(cur)) {
+      return true;
+    }
+
+    if (cur === "_" || cur === "~") {
+      return true;
+    }
+
+    if (cur === ":" || cur === "-") {
+      return isAlphaNumeric(peek) || peek === "_" || peek === "~";
+    }
+
+    return false;
   }
 
   private escape(): string {
