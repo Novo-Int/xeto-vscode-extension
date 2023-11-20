@@ -57,6 +57,10 @@ export const findProtoByQname = (qname: string, root: Proto): Proto | null => {
 
   const parts = qname.split(".");
 
+  if (qname.startsWith("@")) {
+    return root.children[qname];
+  }
+
   let ret: Proto | null = null;
   let currentProto: Proto | undefined = root;
   let currentPartIndex = 0;

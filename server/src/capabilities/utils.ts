@@ -69,6 +69,23 @@ export function getIdentifierLength(doc: TextDocument, pos: Position): number {
     length++;
   }
 
+  //  maybe a data instance
+  const oldLength = length;
+
+  while (
+    position >= -1 &&
+    text.charAt(position).match(dataInstanceIdentifierChar) != null
+  ) {
+    position--;
+    length++;
+  }
+
+  if (text.charAt(position) !== dataInstanceStartChar) {
+    length = oldLength;
+  } else {
+    length++;
+  }
+
   return length;
 }
 

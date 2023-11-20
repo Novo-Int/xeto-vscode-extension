@@ -464,8 +464,12 @@ export class Parser {
   }
 
   private parseDataRef(parent: ParsedProto): void {
-    const child: ParsedProto = new ParsedProto(this.curToLoc(), true);
+    const child: ParsedProto = new ParsedProto(
+      this.curToLoc(this.curCharIndex - 1),
+      true
+    );
     child.name = "@" + (this.curVal as string);
+    child.traits._is = child.name;
 
     this.addToParent(parent, child, false);
     this.consume();
@@ -684,12 +688,12 @@ export class Parser {
       );
   }
 
-  private curToLoc(): FileLoc {
+  private curToLoc(charIndex: number = -1): FileLoc {
     return new FileLoc(
       this.fileLoc.file,
       this.curLine,
       this.curCol,
-      this.tokenizer.charIndex
+      charIndex !== -1 ? charIndex : this.tokenizer.charIndex
     );
   }
 
