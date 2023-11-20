@@ -102,3 +102,21 @@ export const findRefsToProto = (qname: string, root: Proto): Proto[] => {
 
   return ret;
 };
+
+export const findDataInstances = (root: Proto): ChildInfo[] => {
+  const ret: ChildInfo[] = [];
+
+  Object.keys(root.children).forEach((key) => {
+    const proto = root.children[key];
+
+    if (proto.children["#isData"]) {
+      ret.push({
+        label: proto.name,
+        parent: root.name,
+        doc: proto.doc,
+      });
+    }
+  });
+
+  return ret;
+};

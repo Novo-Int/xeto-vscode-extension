@@ -42,6 +42,11 @@ export function getIdentifierForPosition(
     position--;
   }
 
+  //  take care of instance data
+  if (text.charAt(position) === "@") {
+    identifier = "@" + identifier;
+  }
+
   if (position === -1) {
     return "";
   }
