@@ -37,11 +37,6 @@ export const addRenameSymbol = (
       character: startCharacter,
     });
 
-    //  trying to rename a symbol that's not defined in this compilation unit
-    if (protoName === "") {
-      return null;
-    }
-
     const proto: Proto | null = compiler.root
       ? findProtoByQname(protoName, compiler.root)
       : null;

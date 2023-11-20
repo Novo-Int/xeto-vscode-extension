@@ -8,7 +8,7 @@ import {
 
 import { getIdentifierForPosition } from "./utils";
 
-import { findChildrenOf } from "../FindProto";
+import { findChildrenOf, findDataInstances } from "../FindProto";
 import { type LibraryManager } from "../libraries";
 import { type ProtoCompiler } from "../compiler/Compiler";
 import { type TextDocument } from "vscode-languageserver-textdocument";
@@ -27,6 +27,21 @@ export const addAutoCompletion = (
 
     if (!compiledDocument || doc == null) {
       return [];
+    }
+
+    //  maybe is trigger by @ - data instance
+    if (params.context?.triggerCharacter === "@") {
+      const dataInstaces =
+        compiledDocument.root && findDataInstances(compiledDocument.root);
+
+      if (dataInstaces) {
+        return dataInstaces.map((op) => ({
+          label: op.label.substring(1),
+          kind: CompletionItemKind.Field,
+          detail: op.parent,
+          documentation: op.doc,
+        }));
+      }
     }
 
     const partialIdentifier = getIdentifierForPosition(doc, params.position);

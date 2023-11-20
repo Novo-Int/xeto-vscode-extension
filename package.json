@@ -3,7 +3,7 @@
   "description": "A xeto extension",
   "displayName": "Xeto",
   "license": "BSD-3",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "categories": [],
   "keywords": [
     "multi-root ready"
@@ -66,6 +66,11 @@
         "id": "docLink",
         "superType": "type",
         "description": "Token type for links in docs"
+      },
+      {
+        "id": "dataInstance",
+        "superType": "decorator",
+        "description": "Data istance"
       }
     ],
     "configurationDefaults": {
@@ -87,6 +92,10 @@
           },
           "docLink": {
             "foreground": "#12a4d1",
+            "bold": true
+          },
+          "dataInstance": {
+            "foreground": "#b4af1f",
             "bold": true
           }
         }
@@ -110,7 +119,7 @@
     "@types/node": "^16.18.23",
     "@typescript-eslint/eslint-plugin": "^5.59.6",
     "@typescript-eslint/parser": "^5.59.6",
-    "@vscode/test-web": "^0.0.42",
+    "@vscode/test-web": "^0.0.48",
     "@vscode/vsce": "^2.16.0",
     "buffer": "^6.0.3",
     "eslint": "^8.40.0",

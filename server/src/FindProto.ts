@@ -57,6 +57,10 @@ export const findProtoByQname = (qname: string, root: Proto): Proto | null => {
 
   const parts = qname.split(".");
 
+  if (qname.startsWith("@")) {
+    return root.children[qname];
+  }
+
   let ret: Proto | null = null;
   let currentProto: Proto | undefined = root;
   let currentPartIndex = 0;
@@ -97,6 +101,24 @@ export const findRefsToProto = (qname: string, root: Proto): Proto[] => {
 
     if (Object.keys(proto.children).length > 0) {
       ret.push(...findRefsToProto(qname, proto));
+    }
+  });
+
+  return ret;
+};
+
+export const findDataInstances = (root: Proto): ChildInfo[] => {
+  const ret: ChildInfo[] = [];
+
+  Object.keys(root.children).forEach((key) => {
+    const proto = root.children[key];
+
+    if (proto.children["#isData"]) {
+      ret.push({
+        label: proto.name,
+        parent: root.name,
+        doc: proto.doc,
+      });
     }
   });
 

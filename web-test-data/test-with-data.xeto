@@ -24,6 +24,10 @@ MidCircular: CircularDef2Levels {
 
 CircularDef2Levels: MidCircular {}
 
+@arrow-down: Icon {
+  
+}
+
 @move-down : Action {
   icon: @arrow-down
   hotkeys: {"Down"}
