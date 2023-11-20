@@ -13,6 +13,7 @@ enum SemanticType {
   MARKER,
   REFERENCE,
   DOC_REFERENCE,
+  DATA_INSTANCE,
 }
 
 interface SemanticToken {
@@ -95,6 +96,10 @@ const isMarker = (
   return false;
 };
 
+const isDataInstance = (proto: Proto): boolean => {
+  return Boolean(proto.children["#isData"]);
+};
+
 const hasDocRefs = (proto: Proto): boolean => {
   return proto.doc?.match(/\[([^\]]*)\]/)?.length !== undefined ?? false;
 };
@@ -163,6 +168,13 @@ const extractSemanticProtosRecursive = (
     return;
   }
 
+  if (isDataInstance(proto)) {
+    bag.push({
+      proto,
+      type: SemanticType.DATA_INSTANCE,
+    });
+  }
+
   Object.values(proto.children).forEach((proto) => {
     extractSemanticProtosRecursive(root, proto, bag, source, libManager);
   });
@@ -191,6 +203,8 @@ const extractPosFromToken = (token: SemanticToken): Pos => {
     }
     case SemanticType.DOC_REFERENCE:
       return token.extraInfo as unknown as Pos;
+    case SemanticType.DATA_INSTANCE:
+      return extractPosFromProto(token.proto);
   }
 };
 
@@ -202,6 +216,8 @@ const semanticTokenToLegendIndex = (type: SemanticType): number => {
       return 1;
     case SemanticType.DOC_REFERENCE:
       return 2;
+    case SemanticType.DATA_INSTANCE:
+      return 3;
   }
 };
 

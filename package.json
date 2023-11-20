@@ -66,6 +66,11 @@
         "id": "docLink",
         "superType": "type",
         "description": "Token type for links in docs"
+      },
+      {
+        "id": "dataInstance",
+        "superType": "decorator",
+        "description": "Data istance"
       }
     ],
     "configurationDefaults": {
@@ -87,6 +92,10 @@
           },
           "docLink": {
             "foreground": "#12a4d1",
+            "bold": true
+          },
+          "dataInstance": {
+            "foreground": "#ede624",
             "bold": true
           }
         }
