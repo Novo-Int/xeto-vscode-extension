@@ -11,6 +11,9 @@ import { type LibraryManager, type XetoLib } from "../libraries";
 const identifierCharRegexp = /[a-zA-Z0-9_. :\t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
+const dataInstanceIdentifierChar = /[a-zA-Z0-9_~-]/;
+const dataInstanceStartChar = "@";
+
 export function getIdentifierForPosition(
   doc: TextDocument,
   pos: Position
@@ -97,6 +100,8 @@ export function getLargestIdentifierForPosition(
     position--;
   }
 
+  const initialPos = position;
+
   identifier = identifier.trim().replace(/[\n\t]/g, "");
 
   position = doc.offsetAt(pos) + 1;
@@ -106,6 +111,36 @@ export function getLargestIdentifierForPosition(
   ) {
     identifier += text.charAt(position);
     position++;
+  }
+
+  //  maybe this is a data instance
+  //  let's try to go
+  const rightMostPosition = position;
+  position = initialPos;
+  let dataId = identifier;
+
+  while (
+    position >= -1 &&
+    text.charAt(position).match(dataInstanceIdentifierChar) != null
+  ) {
+    dataId = text.charAt(position) + dataId;
+    position--;
+  }
+
+  if (text.charAt(position) === dataInstanceStartChar) {
+    identifier = "@" + dataId;
+
+    //  if this is a data instance then we may need to
+    //  scan to the right also
+    position = rightMostPosition;
+
+    while (
+      position < text.length &&
+      text.charAt(position).match(dataInstanceIdentifierChar) != null
+    ) {
+      identifier += text.charAt(position);
+      position++;
+    }
   }
 
   identifier = identifier.trim().replace(/[\n\t]/g, "");
