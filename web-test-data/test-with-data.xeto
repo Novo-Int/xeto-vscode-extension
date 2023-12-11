@@ -61,3 +61,11 @@ accessibility: Icon {
 		string: "some string here"
 	}
 }
+
+@test-alpha: {
+  marker
+}
+
+@more-test: {
+  key1: @test-alpha
+}
