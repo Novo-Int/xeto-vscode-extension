@@ -52,3 +52,8 @@ accessibility: Icon {
 		string: "some string here"
 	}
 }
+
+GeoCountry: Enum {
+  af <key:"AF"> // Afganistan
+  ax <key:"AX"> // Aland Islands
+}

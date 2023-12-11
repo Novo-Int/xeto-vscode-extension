@@ -165,6 +165,10 @@ export class Parser {
       proto.traits = {
         _is: "sys.Marker",
       };
+      //  maybe has specs
+      if (this.cur === Token.LT) {
+        this.parseMeta(proto);
+      }
     } else {
       this.parseBody(proto);
     }
