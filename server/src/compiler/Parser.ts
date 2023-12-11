@@ -395,10 +395,13 @@ export class Parser {
       this.curCol - 1,
       this.curCharIndex - 1
     );
-    const qname = this.consumeQName();
 
-    proto.traits._is = qname;
-    proto.traits._type = "sys.Ref";
+    if (this.cur !== Token.LBRACE) {
+      const qname = this.consumeQName();
+      proto.traits._is = qname;
+      proto.traits._type = "sys.Ref";
+    }
+
     proto.traits._qnameLoc = qnameLoc;
 
     if (this.cur !== Token.LBRACE) {
