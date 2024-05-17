@@ -22,7 +22,7 @@ export class Token {
   static PIPE = new Token("|");
   static NL = new Token("newline");
 
-  static TRIPLE_DASH = new Token("---");
+  static TRIPLE_DASH = new Token("---", true);
 
   // misc
   static COMMENT = new Token("comment");
