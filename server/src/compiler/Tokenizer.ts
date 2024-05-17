@@ -373,6 +373,13 @@ export class Tokenizer {
           return Token.DOUBLE_COLON;
         }
         return Token.COLON;
+      case "-":
+        if (this.cur === "-" && this.peek === "-") {
+          this.consume();
+          this.consume();
+          return Token.TRIPLE_DASH;
+        }
+        break;
       case "[":
         return Token.LBRACKET;
       case "]":

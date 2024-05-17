@@ -104,6 +104,37 @@ export class Parser {
     }
   }
 
+  private parseCodeFences(): void {
+    if (
+      this.cur !== Token.TRIPLE_DASH &&
+      this.cur === Token.NL &&
+      this.peek !== Token.TRIPLE_DASH
+    ) {
+      return;
+    }
+
+    do {
+      if (this.cur === Token.NL) {
+        this.skipNewlines();
+      }
+
+      if (this.cur !== Token.TRIPLE_DASH) {
+        return;
+      }
+
+      this.parseCodeFence();
+    } while (true);
+  }
+
+  private parseCodeFence(): void {
+    //  we know we have a triple dash, so let's parse all of them
+    this.consume();
+    while (this.cur !== Token.TRIPLE_DASH) {
+      this.consume();
+    }
+    this.consume();
+  }
+
   private parseEndOfProto(): void {
     if (this.cur === Token.COMMA) {
       this.consume();
@@ -173,6 +204,7 @@ export class Parser {
       this.parseBody(proto);
     }
 
+    this.parseCodeFences();
     this.parseTrailingDoc(proto);
 
     return proto;
