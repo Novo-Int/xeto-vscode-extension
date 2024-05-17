@@ -140,17 +140,32 @@
     "embeddedSVG": {
       "name": "meta.embedded.block.svg",
       "begin": "<svg",
-      "end": "</svg>|.*(?=\"\"\")"
+      "end": "</svg>|.*(?=\"\"\")",
+      "patterns": [
+        {
+          "include": "text.xml"
+        }
+      ]
     },
     "embeddedHTML": {
       "name": "meta.embedded.block.html",
       "begin": "<\\shtml\\s*>",
-      "end": "</html\\s*>|.*(?=\"\"\")"
+      "end": "</html\\s*>|.*(?=\"\"\")",
+      "patterns": [
+        {
+          "include": "text.html.basic"
+        }
+      ]
     },
     "embeddedXML": {
       "name": "meta.embedded.block.xml",
       "begin": "<(\\w*)\\s*>",
-      "end": "</\\s*\\1\\s*>|.*(?=\"\"\")"
+      "end": "</\\s*\\1\\s*>|.*(?=\"\"\")",
+      "patterns": [
+        {
+          "include": "text.xml"
+        }
+      ]
     },
     "protoType": {
       "name": "xeto.proto.type",

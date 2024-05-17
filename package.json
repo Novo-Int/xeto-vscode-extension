@@ -36,12 +36,12 @@
         "scopeName": "source.xeto",
         "path": "./syntaxes/xeto.tmLanguage.json",
         "embeddedLanguages": {
-          "source.svg": "svg",
           "meta.embedded.block.svg": "svg",
-          "source.html": "html",
           "meta.embedded.block.html": "html",
-          "source.xml": "xml",
-          "meta.embedded.block.xml": "xml"
+          "meta.embedded.block.xml": "xml",
+          "meta.embedded.block.javascript": "javascript",
+          "meta.embedded.block.axon": "axon",
+          "meta.embedded.block.md": "markdown"
         }
       }
     ],
