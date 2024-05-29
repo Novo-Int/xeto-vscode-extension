@@ -187,7 +187,12 @@
     "embeddedAxon": {
       "name": "meta.embedded.block.axon",
       "begin": "---\\s*axon",
-      "end": "---"
+      "end": "---",
+      "patterns": [
+        {
+          "include": "source.axon"
+        }
+      ]
     },
     "embeddedJS": {
       "name": "meta.embedded.block.js",
@@ -201,8 +206,13 @@
     },
     "embeddedMarkdown": {
       "name": "meta.embedded.block.md",
-      "begin": "---\\s*markdown",
-      "end": "---"
+      "begin": "^\\s*---\\s*markdown\\s*$",
+      "end": "^\\s*(---)\\s*$",
+      "patterns": [
+        {
+          "include": "text.html.markdown"
+        }
+      ]
     },
     "protoUnnamed": {
       "name": "xeto.proto.unnamed",
