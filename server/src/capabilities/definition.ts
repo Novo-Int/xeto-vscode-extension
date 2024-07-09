@@ -31,7 +31,7 @@ export const addDefinition = (
     }
 
     return {
-      uri: proto.loc.file,
+      uri: proto.loc.file.replace("file:/", ""),
       range: {
         start: {
           line: proto.loc.line,

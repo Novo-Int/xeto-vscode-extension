@@ -22,8 +22,10 @@ export const isPartOfLib = async (
       const fs = await import("fs/promises");
       const osPath = await import("path");
 
+      const libPath = path.match(/file:\/\/[a-zA-Z]:\//) ? path.replace("file://", "") : path.replace("file:/", "");
+
       const stat = await fs.stat(
-        osPath.join(path.replace("file:/", ""), "..", "lib.xeto")
+        osPath.join(libPath, "..", "lib.xeto")
       );
       if (stat.isFile()) {
         return true;

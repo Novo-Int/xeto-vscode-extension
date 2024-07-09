@@ -59,13 +59,13 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
 
   if (params.workspaceFolders != null) {
     return params.workspaceFolders.map((folder) =>
-      folder.uri.replace("file://", "")
+      decodeURIComponent(folder.uri.replace("file:///", "").replace("file://", ""))
     );
   } else {
     ret = params.rootUri ?? "";
   }
 
-  ret = ret.replace("file://", "");
+  ret = decodeURIComponent(ret.replace("file:///", "").replace("file://", ""));
 
   return [ret];
 };
