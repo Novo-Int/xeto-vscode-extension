@@ -1,0 +1,5 @@
+{
+    "editor.scrollbar.horizontal": "auto",
+    "editor.scrollbar.scrollByPage": false,
+    "monaco.lineNumbers": "off"
+}

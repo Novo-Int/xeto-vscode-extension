@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+      		"path": "file:///Users/radudita/Documents/Kyrt/pog-vscode-extension/web-test-data"
+    	}
+	],
+    "openFiles": [
+		"file:///Users/radudita/Documents/Kyrt/pog-vscode-extension/web-test-data/test.xeto",
+		"file:///Users/radudita/Documents/Kyrt/pog-vscode-extension/web-test-data/mylib/ent.xeto"
+	]
+}

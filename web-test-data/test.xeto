@@ -64,5 +64,14 @@ CodeSpec: {
   add: Func {a: Number, b: Number, returns: Number}
   --- javascript
   return a + b
+  function a(v) {
+    return v
+  }
+  ---
+  --- markdown
+  # casdad
+  
+  *asdasd**as**dasd*
+
   ---
 }
