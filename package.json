@@ -112,6 +112,7 @@
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "test": "sh ./scripts/e2e.sh",
     "deploy": "vsce publish",
+    "extension:build": "vsce package",
     "test-web": "npm run compile-web && vscode-test-web --browserType=chromium --verbose --extensionDevelopmentPath=. ./web-test-data"
   },
   "devDependencies": {
