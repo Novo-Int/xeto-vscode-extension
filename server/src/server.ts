@@ -59,7 +59,6 @@ const getRootFolderFromParams = (params: InitializeParams): string[] => {
 
   if (params.workspaceFolders != null) {
     return params.workspaceFolders.map((folder) => {
-      console.log(folder.uri)
       const p = folder.uri.match(/^file:\/\/\/[a-zA-Z]%3A\//)
         ? folder.uri.replace("file:///", "")
         : folder.uri.replace("file://", "");
