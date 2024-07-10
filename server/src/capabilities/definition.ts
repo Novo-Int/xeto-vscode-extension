@@ -31,7 +31,9 @@ export const addDefinition = (
     }
 
     return {
-      uri: proto.loc.file,
+      uri: proto.loc.file.match(/^file:\/\/\/?[a-zA-Z]:\//)
+        ? proto.loc.file.replace("file:/", "")
+        : proto.loc.file,
       range: {
         start: {
           line: proto.loc.line,
