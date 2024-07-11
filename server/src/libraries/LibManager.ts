@@ -79,12 +79,18 @@ export class LibraryManager {
     }
 
     const split = qname.split(Token.DOUBLE_COLON.toString());
-    const lib = this.getLib(split[0]);
+    const isDataInstance = split[0].startsWith("@");
+
+    //  need to check if this is not a dataInstance
+    const lib = this.getLib(isDataInstance ? split[0].slice(1) : split[0]);
 
     if (!lib) {
       return null;
     }
 
-    return findProtoByQname(split[1], lib.rootProto);
+    return findProtoByQname(
+      isDataInstance ? "@" + split[1] : split[1],
+      lib.rootProto
+    );
   }
 }
