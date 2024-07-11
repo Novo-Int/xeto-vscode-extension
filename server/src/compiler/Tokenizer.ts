@@ -273,7 +273,7 @@ export class Tokenizer {
     //  these casts are necessary because of this
     //  https://github.com/Microsoft/TypeScript/issues/9998
     if ((this.cur as any) !== ".") {
-      return lib + "::" + path.join(".");
+      return lib + "::" + name;
     }
 
     // qualified dotted path
