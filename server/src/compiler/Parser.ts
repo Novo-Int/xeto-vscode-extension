@@ -465,7 +465,9 @@ export class Parser {
     if (this.cur !== Token.ID) {
       return;
     }
-    const child: ParsedProto = new ParsedProto(this.curToLoc());
+    const child: ParsedProto = new ParsedProto(
+      this.curToLoc(this.curCharIndex - 1)
+    );
     child.name = this.consumeQName();
     child.traits._is = child.name;
     child.traits._type = "sys.Ref";
