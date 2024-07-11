@@ -465,12 +465,20 @@ export class Parser {
     if (this.cur !== Token.ID) {
       return;
     }
+    const qnameLoc = new FileLoc(
+      this.fileLoc.file,
+      this.curLine,
+      this.curCol - 1,
+      this.curCharIndex - 1
+    );
+
     const child: ParsedProto = new ParsedProto(
       this.curToLoc(this.curCharIndex - 1)
     );
     child.name = this.consumeQName();
     child.traits._is = child.name;
     child.traits._type = "sys.Ref";
+    child.traits._qnameLoc = qnameLoc;
 
     this.addToParent(parent, child, false);
   }
