@@ -411,6 +411,17 @@ export class Parser {
     this.parseDict(proto, Token.LBRACE, Token.RBRACE);
   }
 
+  private parseDictHeredocs(parent: ParsedProto): void {
+    while (this.cur === Token.TRIPLE_DASH) {
+      parent.name = "heredocs";
+      parent.traits._is = "sys.Str";
+
+      parent.doc = this.curVal;
+
+      this.consume();
+    }
+  }
+
   private parseDict(
     parent: ParsedProto,
     openToken: Token,
@@ -436,6 +447,8 @@ export class Parser {
 
           this.parseData(child);
         }
+      } else if (this.cur === Token.TRIPLE_DASH) {
+        this.parseDictHeredocs(child);
       } else {
         this.parseData(child);
       }
@@ -448,11 +461,25 @@ export class Parser {
     this.consume(closeToken);
   }
 
+  private parseTypeRef(parent: ParsedProto): void {
+    if (this.cur !== Token.ID) {
+      return;
+    }
+    const child: ParsedProto = new ParsedProto(this.curToLoc());
+    child.name = this.consumeQName();
+    child.traits._is = child.name;
+    child.traits._type = "sys.Ref";
+
+    this.addToParent(parent, child, false);
+  }
+
   private parseData(parent: ParsedProto): void {
     if (this.cur === Token.REF) {
       this.parseDataRef(parent);
       return;
     }
+
+    this.parseTypeRef(parent);
 
     if (this.cur === Token.STR || this.cur === Token.VAL) {
       this.parseScalar(parent);
