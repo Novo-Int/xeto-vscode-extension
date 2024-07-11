@@ -197,6 +197,44 @@ export class Tokenizer {
     return Token.STR;
   }
 
+  private code(): Token {
+    let s = "---";
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const ch = this.cur;
+      if (ch === "-") {
+        this.consume();
+        if (this.cur !== "-" || this.peek !== "-") {
+          s += '"';
+          continue;
+        }
+
+        this.consume();
+        this.consume();
+
+        break;
+      }
+
+      if (ch === "\0") {
+        this.currentError = new CompilerError(
+          "Unexpected end of code fence",
+          ErrorTypes.UNCLOSED_STRING,
+          new FileLoc("", this.line, this.col, this.charIndex),
+          new FileLoc("", this.curLine, this.curCol)
+        );
+        this.val = s;
+        return Token.STR;
+      }
+
+      this.consume();
+      s += ch;
+    }
+
+    this.val = s;
+    return Token.TRIPLE_DASH;
+  }
+
   private ref(): Token {
     this.consume(); // @
 
@@ -373,6 +411,13 @@ export class Tokenizer {
           return Token.DOUBLE_COLON;
         }
         return Token.COLON;
+      case "-":
+        if (this.cur === "-" && this.peek === "-") {
+          this.consume();
+          this.consume();
+          return this.code();
+        }
+        break;
       case "[":
         return Token.LBRACKET;
       case "]":
