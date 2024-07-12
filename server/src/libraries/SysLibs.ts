@@ -8,15 +8,34 @@ import { readUrl } from "./utils";
 const librariesToAdd = [
   {
     name: "sys",
-    files: ["meta.xeto", "types.xeto"] as string[],
+    files: [
+      "meta.xeto",
+      "types.xeto",
+      "units.xeto",
+      "timezones.xeto",
+    ] as string[],
+  },
+  {
+    name: "sys.comp",
+    files: ["types.xeto"] as string[],
   },
   {
     name: "ph",
-    files: ["kinds.xeto", "entities.xeto"] as string[],
+    files: [
+      "kinds.xeto",
+      "entities.xeto",
+      "choices.xeto",
+      "enums.xeto",
+      "filetypes.xeto",
+      "ops.xeto",
+      "quantity.xeto",
+      "tags.xeto",
+      "phenomenon.xeto",
+    ] as string[],
   },
   {
     name: "ph.equips",
-    files: ["equips.xeto"] as string[],
+    files: ["hvac.xeto", "meters.xeto"] as string[],
   },
   {
     name: "ph.points",
@@ -127,7 +146,7 @@ const processSysLibNo = async (
 };
 
 export const loadSysLibsFromGH = (sha: string, lm: LibraryManager): void => {
-  const baseURL = `https://raw.githubusercontent.com/haxall/haxall/${sha}/src/xeto`;
+  const baseURL = `https://raw.githubusercontent.com/Project-Haystack/xeto/${sha}/src/xeto`;
 
   void processSysLibNo(baseURL, lm, 0);
 };
