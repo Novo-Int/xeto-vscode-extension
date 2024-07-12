@@ -565,6 +565,11 @@ export class Parser {
       (parent.traits[name] as Record<string, any>)._of = child.traits;
     } else {
       parent.traits[name] = child.traits;
+
+      //  maybe add docs as here docs
+      if (name === "heredocs" && !parent.traits._doc) {
+        parent.traits._doc = child.traits._doc;
+      }
     }
   }
 
