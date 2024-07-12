@@ -185,7 +185,13 @@ connection.onDidChangeWatchedFiles((_change) => {
   connection.console.log("We received an file change event");
 });
 
-addAutoCompletion(connection, libManager, docsToCompilerResults, documents);
+addAutoCompletion(
+  connection,
+  libManager,
+  docsToCompilerResults,
+  documents,
+  uriToLibs
+);
 
 addHover(connection, docsToCompilerResults, documents, uriToLibs, libManager);
 

@@ -9,7 +9,7 @@ import {
 import { getIdentifierForPosition } from "./utils";
 
 import { findChildrenOf, findDataInstances } from "../FindProto";
-import { type LibraryManager } from "../libraries";
+import { type XetoLib, type LibraryManager } from "../libraries";
 import { type ProtoCompiler } from "../compiler/Compiler";
 import { type TextDocument } from "vscode-languageserver-textdocument";
 import { Token } from "../compiler/Token";
@@ -18,7 +18,8 @@ export const addAutoCompletion = (
   connection: Connection,
   libManager: LibraryManager,
   compiledDocs: Record<string, ProtoCompiler>,
-  docs: TextDocuments<TextDocument>
+  docs: TextDocuments<TextDocument>,
+  uriToLib: Map<string, XetoLib>
 ): void => {
   function handleAutoCompletion(params: CompletionParams): CompletionItem[] {
     // let try to find the identifier for this position
@@ -34,13 +35,35 @@ export const addAutoCompletion = (
       const dataInstaces =
         compiledDocument.root && findDataInstances(compiledDocument.root);
 
+      const suggestions: CompletionItem[] = [];
+
+      // it may also want to refer to a lib
+      const lib = uriToLib.get(params.textDocument.uri);
+
+      if (lib) {
+        suggestions.push(
+          ...lib.deps.map((dep) => ({
+            label: dep,
+            kind: CompletionItemKind.Folder,
+            detail: "",
+            documentation: "",
+          }))
+        );
+      }
+
       if (dataInstaces) {
-        return dataInstaces.map((op) => ({
-          label: op.label.substring(1),
-          kind: CompletionItemKind.Field,
-          detail: op.parent,
-          documentation: op.doc,
-        }));
+        suggestions.push(
+          ...dataInstaces.map((op) => ({
+            label: op.label.substring(1),
+            kind: CompletionItemKind.Field,
+            detail: op.parent,
+            documentation: op.doc,
+          }))
+        );
+      }
+
+      if (suggestions.length) {
+        return suggestions;
       }
     }
 
@@ -61,15 +84,23 @@ export const addAutoCompletion = (
       partialIdentifier.includes(Token.DOUBLE_COLON.toString())
     ) {
       const parts = partialIdentifier.split(Token.DOUBLE_COLON.toString());
-      const libName = parts[0];
+      const isDataInstance = parts[0].startsWith("@");
+      const libName = isDataInstance ? parts[0].slice(1) : parts[0];
       const lib = libManager.getLib(libName);
 
       if (lib) {
-        const identifierWithoutLib = parts[1];
+        const identifierWithoutLib = isDataInstance ? "@" + parts[1] : parts[1];
 
         //  we don't allow drill down after the lib type
         if (identifierWithoutLib === "") {
           options = findChildrenOf(identifierWithoutLib, lib.rootProto);
+        }
+
+        if (identifierWithoutLib === "@") {
+          options = findDataInstances(lib.rootProto).map((o) => ({
+            ...o,
+            label: o.label.slice(1),
+          }));
         }
       }
     }
