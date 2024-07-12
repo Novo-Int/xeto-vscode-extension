@@ -430,10 +430,14 @@ export class Parser {
     this.consume(openToken);
     this.skipNewlines();
 
+    let prevCur: Token | null = null;
+
     while (this.cur !== closeToken) {
       this.skipComments();
 
       const child = new ParsedProto(this.curToLoc());
+
+      prevCur = this.cur;
 
       if (this.cur === Token.ID) {
         child.name = this.consumeName();
@@ -451,6 +455,13 @@ export class Parser {
         this.parseDictHeredocs(child);
       } else {
         this.parseData(child);
+      }
+
+      //  need to check if we consumed something this cycle
+      //  if nothing was consumed we'll just consume it and
+      //  report it as an error
+      if (prevCur === this.cur) {
+        this.consume();
       }
 
       this.addToParent(parent, child, false);
