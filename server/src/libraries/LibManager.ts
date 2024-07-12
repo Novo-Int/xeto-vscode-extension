@@ -42,6 +42,8 @@ export class LibraryManager {
     qname: string,
     desiredLibs: string[] = []
   ): Proto | null {
+    const isDataInstance = qname.startsWith("@");
+
     //	if we have desiredLibs let's look there first
     if (desiredLibs) {
       for (let i = 0; i < desiredLibs.length; i++) {
@@ -62,7 +64,7 @@ export class LibraryManager {
 
     //  no explicit lib
     if (!qname.includes(Token.DOUBLE_COLON.toString())) {
-      const lib = this.getLib(qname);
+      const lib = this.getLib(isDataInstance ? qname.slice(1) : qname);
 
       if (!lib) {
         //  let search in sys lib
@@ -79,7 +81,6 @@ export class LibraryManager {
     }
 
     const split = qname.split(Token.DOUBLE_COLON.toString());
-    const isDataInstance = split[0].startsWith("@");
 
     //  need to check if this is not a dataInstance
     const lib = this.getLib(isDataInstance ? split[0].slice(1) : split[0]);
