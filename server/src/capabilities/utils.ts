@@ -11,7 +11,7 @@ import { type LibraryManager, type XetoLib } from "../libraries";
 const identifierCharRegexp = /[a-zA-Z0-9_. :\t]/;
 const identifierSegmentCharRegexp = /[a-zA-Z0-9_]/;
 
-const dataInstanceIdentifierChar = /[a-zA-Z0-9_~-]/;
+const dataInstanceIdentifierChar = /[a-zA-Z0-9_~.-]/;
 const dataInstanceStartChar = "@";
 
 export function getIdentifierForPosition(
@@ -95,6 +95,7 @@ export function getLargestIdentifierForPosition(
 ): string {
   let position = doc.offsetAt(pos);
   const text = doc.getText();
+  let foundDoubleColon: boolean = false;
 
   // this is naive, but we go backwards until we reach a :
   let identifier = "";
@@ -115,6 +116,7 @@ export function getLargestIdentifierForPosition(
       } else {
         identifier = ":" + identifier;
         position--;
+        foundDoubleColon = true;
       }
     }
 
@@ -143,8 +145,19 @@ export function getLargestIdentifierForPosition(
 
   while (
     position >= -1 &&
-    text.charAt(position).match(dataInstanceIdentifierChar) != null
+    (text.charAt(position).match(dataInstanceIdentifierChar) != null ||
+      // eslint-disable-next-line no-unmodified-loop-condition
+      (!foundDoubleColon && text.charAt(position) === ":"))
   ) {
+    //  need to take special care about ::
+    if (text.charAt(position) === ":") {
+      if (text.charAt(position - 1) !== ":") {
+        break;
+      } else {
+        dataId = ":" + dataId;
+        position--;
+      }
+    }
     dataId = text.charAt(position) + dataId;
     position--;
   }
