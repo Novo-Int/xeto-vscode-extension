@@ -1,4 +1,5 @@
 import {
+  MarkupKind,
   type Connection,
   type Hover,
   type HoverParams,
@@ -31,7 +32,10 @@ export const addHover = (
     }
 
     return {
-      contents: proto.doc ?? "",
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: proto.doc ?? "",
+      },
     };
   }
 

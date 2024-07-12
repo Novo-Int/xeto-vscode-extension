@@ -578,8 +578,14 @@ export class Parser {
       parent.traits[name] = child.traits;
 
       //  maybe add docs as here docs
-      if (name === "heredocs" && !parent.traits._doc) {
+      if (name === "heredocs" && !parent.traits._doc && child.traits._doc) {
         parent.traits._doc = child.traits._doc;
+        (parent.traits._doc as Record<string, string>)._val = (
+          child.traits._doc as Record<string, string>
+        )._val
+          .split("\n")
+          .slice(1)
+          .join("\n");
       }
     }
   }
