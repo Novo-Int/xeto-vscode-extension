@@ -6,6 +6,9 @@ import * as path from "path";
 import {
   languages,
   workspace,
+  window,
+  env,
+  Uri,
   type ExtensionContext,
   SemanticTokensLegend,
 } from "vscode";
@@ -23,6 +26,17 @@ import XetoSemanticTokenProvider from "./xeto-semanticprovider";
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext): void {
+  // Show deprecation warning
+  window.showWarningMessage(
+    '⚠️ This extension is deprecated. Please install "Xeto IDE Extension" by xeto publisher instead.',
+    'Open New Extension',
+    'Dismiss'
+  ).then(selection => {
+    if (selection === 'Open New Extension') {
+      env.openExternal(Uri.parse('https://marketplace.visualstudio.com/items?itemName=xeto.xeto-vscode-extension'));
+    }
+  });
+
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js")

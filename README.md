@@ -1,3 +1,13 @@
+# ⚠️ DEPRECATED - This Extension Has Moved
+
+**This extension is no longer maintained.** Please uninstall this version and install the new official version:
+
+👉 **[Xeto IDE Extension (by xeto)](https://marketplace.visualstudio.com/items?itemName=xeto.xeto-vscode-extension)**
+
+The new extension includes all features from this version plus improvements and ongoing support.
+
+---
+
 # XETO Extension for VSCode
 
 [![GitHub CI](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml/badge.svg)](https://github.com/Novo-Int/xeto-vscode-extension/actions/workflows/main.yml)

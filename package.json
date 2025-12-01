@@ -1,12 +1,13 @@
 {
   "name": "xeto-extension",
-  "description": "A xeto extension",
+  "description": "⚠️ DEPRECATED - Use xeto.xeto-vscode-extension instead",
   "displayName": "Xeto",
   "license": "BSD-3",
-  "version": "0.1.35",
+  "version": "0.1.36",
   "categories": [],
   "keywords": [
-    "multi-root ready"
+    "multi-root ready",
+    "deprecated"
   ],
   "publisher": "novo-studio",
   "repository": {
